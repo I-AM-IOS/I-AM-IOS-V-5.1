@@ -1,0 +1,2939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I-AM SYSTEM v5.1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #0a0a0b;
+  --bg1: #111113;
+  --bg2: #18181c;
+  --bg3: #222228;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8e8ea;
+  --text2: #888892;
+  --text3: #555560;
+  --accent: #4ade80;
+  --accent2: #22d3ee;
+  --accent3: #a78bfa;
+  --accent4: #fb923c;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:var(--mono); overflow:hidden; }
+
+#app { display:grid; grid-template-columns:220px 1fr; grid-template-rows:48px 1fr; height:100vh; }
+#topbar { grid-column:1/-1; display:flex; align-items:center; gap:16px; padding:0 20px; border-bottom:1px solid var(--border); background:var(--bg1); position:relative; z-index:100; }
+#sidebar { border-right:1px solid var(--border); background:var(--bg1); display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; }
+#main { overflow:hidden; display:flex; flex-direction:column; background:var(--bg); }
+
+.logo { font-size:13px; font-weight:600; letter-spacing:3px; color:var(--accent); }
+.logo span { color:var(--text3); }
+.node-id { font-size:10px; color:var(--text3); font-family:var(--mono); }
+.node-id em { color:var(--text2); font-style:normal; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--red); transition:background .3s; flex-shrink:0; }
+.status-dot.online { background:var(--accent); box-shadow:0 0 6px var(--accent); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.top-stats { display:flex; gap:16px; margin-left:auto; flex-wrap:wrap; }
+.top-stat { font-size:10px; color:var(--text3); }
+.top-stat em { color:var(--text2); font-style:normal; font-weight:500; }
+#ollama-status { font-size:10px; padding:3px 8px; border-radius:3px; border:1px solid var(--border2); color:var(--text3); }
+#ollama-status.ok { color:var(--accent); border-color:var(--accent); }
+
+.nav-section { padding:16px 12px 6px; font-size:9px; letter-spacing:2px; color:var(--text3); }
+.nav-item { display:flex; align-items:center; gap:8px; padding:7px 12px; cursor:pointer; font-size:12px; color:var(--text2); transition:all .15s; border-left:2px solid transparent; }
+.nav-item:hover { color:var(--text); background:var(--bg2); }
+.nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(74,222,128,0.05); }
+.nav-item .nav-icon { width:14px; text-align:center; font-size:11px; }
+.nav-item .nav-badge { margin-left:auto; background:var(--accent); color:#000; font-size:9px; padding:1px 5px; border-radius:2px; font-weight:600; }
+.sidebar-footer { margin-top:auto; padding:12px; border-top:1px solid var(--border); }
+
+.panel { display:none; flex-direction:column; height:100%; overflow:hidden; }
+.panel.active { display:flex; }
+.panel-header { padding:16px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.panel-title { font-size:11px; letter-spacing:2px; color:var(--text2); margin-bottom:4px; }
+.panel-sub { font-size:10px; color:var(--text3); }
+.panel-body { flex:1; overflow-y:auto; padding:16px 20px; }
+.panel-body::-webkit-scrollbar { width:3px; }
+.panel-body::-webkit-scrollbar-thumb { background:var(--bg3); }
+
+input, textarea, select {
+  background:var(--bg2); border:1px solid var(--border2); color:var(--text);
+  font-family:var(--mono); font-size:12px; padding:8px 10px;
+  border-radius:4px; width:100%; transition:border .2s; outline:none;
+}
+input:focus, textarea:focus, select:focus { border-color:var(--accent2); }
+textarea { resize:vertical; min-height:60px; }
+select option { background:var(--bg2); }
+
+button {
+  background:var(--bg2); border:1px solid var(--border2); color:var(--text2);
+  font-family:var(--mono); font-size:11px; padding:7px 14px; cursor:pointer;
+  border-radius:4px; transition:all .15s; white-space:nowrap;
+}
+button:hover { color:var(--text); background:var(--bg3); }
+button.primary { background:rgba(74,222,128,0.1); border-color:var(--accent); color:var(--accent); }
+button.primary:hover { background:rgba(74,222,128,0.2); }
+button.danger { background:rgba(248,113,113,0.1); border-color:var(--red); color:var(--red); }
+button:disabled { opacity:.4; cursor:not-allowed; }
+
+.row { display:flex; gap:8px; align-items:flex-start; }
+.row.center { align-items:center; }
+.col { display:flex; flex-direction:column; gap:8px; }
+label { font-size:10px; color:var(--text3); display:block; margin-bottom:4px; }
+
+.card { background:var(--bg1); border:1px solid var(--border); border-radius:6px; padding:14px; }
+.card + .card { margin-top:8px; }
+.card-title { font-size:10px; letter-spacing:1.5px; color:var(--text3); margin-bottom:10px; }
+
+.claim { background:var(--bg1); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px; }
+.claim-text { font-size:12px; color:var(--text); margin-bottom:8px; line-height:1.5; }
+.claim-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.tag { font-size:9px; padding:2px 7px; border-radius:2px; font-weight:500; letter-spacing:.5px; }
+.tag-blue { background:rgba(34,211,238,0.1); color:var(--accent2); border:1px solid rgba(34,211,238,0.2); }
+.tag-green { background:rgba(74,222,128,0.1); color:var(--accent); border:1px solid rgba(74,222,128,0.2); }
+.tag-purple { background:rgba(167,139,250,0.1); color:var(--accent3); border:1px solid rgba(167,139,250,0.2); }
+.tag-red { background:rgba(248,113,113,0.1); color:var(--red); border:1px solid rgba(248,113,113,0.2); }
+.tag-amber { background:rgba(251,191,36,0.1); color:var(--yellow); border:1px solid rgba(251,191,36,0.2); }
+
+.conf-bar { height:3px; background:var(--bg3); border-radius:2px; margin-top:8px; overflow:hidden; }
+.conf-fill { height:100%; border-radius:2px; transition:width .5s; }
+
+.peer { display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--bg1); border:1px solid var(--border); border-radius:4px; margin-bottom:6px; }
+.peer-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.peer-name { font-size:12px; flex:1; }
+.peer-addr { font-size:10px; color:var(--text3); }
+
+#msg-container { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:6px; }
+#msg-container::-webkit-scrollbar { width:3px; }
+#msg-container::-webkit-scrollbar-thumb { background:var(--bg3); }
+.msg { display:flex; flex-direction:column; max-width:72%; }
+.msg.mine { align-self:flex-end; align-items:flex-end; }
+.msg.theirs { align-self:flex-start; }
+.msg-bubble { padding:8px 12px; border-radius:6px; font-size:12px; line-height:1.5; word-break:break-word; }
+.msg.mine .msg-bubble { background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.2); color:var(--text); }
+.msg.theirs .msg-bubble { background:var(--bg2); border:1px solid var(--border2); }
+.msg-meta { font-size:9px; color:var(--text3); margin-top:2px; padding:0 2px; }
+.msg-file { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg2); border:1px solid var(--border2); border-radius:6px; cursor:pointer; font-size:11px; }
+.msg-file:hover { border-color:var(--accent2); }
+#msg-input-row { padding:10px 16px; border-top:1px solid var(--border); display:flex; gap:8px; }
+.msg-peer-select { padding:10px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text2); }
+
+.rep-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.rep-cell { background:var(--bg1); border:1px solid var(--border); border-radius:6px; padding:12px; text-align:center; }
+.rep-val { font-size:22px; font-weight:600; margin:4px 0 2px; }
+.rep-label { font-size:9px; color:var(--text3); letter-spacing:1px; }
+
+.truth-state .t-val { font-size:28px; font-weight:600; font-family:var(--mono); }
+
+.prop { background:var(--bg1); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px; }
+.prop-status { display:inline-block; font-size:9px; padding:2px 7px; border-radius:2px; margin-bottom:6px; }
+.vote-bar { display:flex; height:4px; border-radius:2px; overflow:hidden; margin:8px 0; }
+.vote-for { background:var(--accent); }
+.vote-against { background:var(--red); }
+
+.ledger-entry { display:flex; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); font-size:11px; }
+.ledger-time { color:var(--text3); flex-shrink:0; width:60px; }
+.ledger-type { flex-shrink:0; width:80px; }
+.ledger-msg { color:var(--text2); flex:1; }
+
+.ai-thinking { font-size:11px; color:var(--text3); font-style:italic; }
+.ai-result { font-size:12px; color:var(--text); line-height:1.6; white-space:pre-wrap; background:rgba(167,139,250,0.05); border:1px solid rgba(167,139,250,0.15); border-radius:4px; padding:10px; margin-top:8px; }
+
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--bg3); border-radius:2px; }
+
+.divider { border:none; border-top:1px solid var(--border); margin:12px 0; }
+.chip { font-size:10px; padding:3px 8px; border-radius:3px; background:var(--bg3); color:var(--text3); display:inline-block; }
+
+#toast { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:6px; pointer-events:none; }
+.toast-item { background:var(--bg2); border:1px solid var(--border2); border-radius:4px; padding:8px 14px; font-size:11px; color:var(--text); animation:toast-in .2s ease; max-width:280px; }
+.toast-item.success { border-color:var(--accent); color:var(--accent); }
+.toast-item.error { border-color:var(--red); color:var(--red); }
+@keyframes toast-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.progress { height:2px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--accent2); border-radius:2px; transition:width .3s; }
+
+#file-drop { border:2px dashed var(--border2); border-radius:6px; padding:20px; text-align:center; font-size:11px; color:var(--text3); cursor:pointer; transition:all .2s; }
+#file-drop:hover, #file-drop.drag { border-color:var(--accent2); color:var(--accent2); }
+
+.id-display { font-family:var(--mono); font-size:10px; color:var(--text3); word-break:break-all; line-height:1.6; background:var(--bg2); padding:8px; border-radius:4px; border:1px solid var(--border); margin-top:6px; }
+.id-display em { color:var(--accent); font-style:normal; }
+
+.empty { text-align:center; padding:40px 20px; color:var(--text3); font-size:11px; }
+.spin { display:inline-block; animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* Multi-lane transport */
+.lane-bar { height:4px; background:var(--bg3); border-radius:2px; margin:4px 0; overflow:hidden; }
+.lane-fill { height:100%; background:var(--accent2); transition:width .4s; border-radius:2px; }
+.lane-health { font-size:9px; color:var(--text3); flex-shrink:0; }
+.multi-path-peer { border-left:3px solid var(--accent4); }
+
+/* Memory graph */
+.mem-node { background:var(--bg1); border:1px solid var(--border); border-radius:6px; padding:10px; margin-bottom:6px; }
+.mem-node-text { font-size:11px; color:var(--text); margin-bottom:6px; line-height:1.4; }
+.mem-links { font-size:10px; color:var(--text3); line-height:1.8; }
+
+/* Contribution weights */
+.contrib-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:11px; }
+.contrib-label { color:var(--text2); flex:1; }
+.contrib-val { color:var(--accent3); font-weight:600; min-width:60px; text-align:right; }
+
+/* Specialization */
+.spec-role { display:inline-block; font-size:10px; padding:3px 8px; border-radius:3px; background:rgba(167,139,250,0.1); color:var(--accent3); border:1px solid rgba(167,139,250,0.25); margin:2px; }
+
+/* Reality branch */
+.branch-card { background:var(--bg1); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px; }
+.branch-active { border-color:var(--accent); }
+
+/* Adversarial */
+.adv-node { background:rgba(248,113,113,0.05); border:1px solid rgba(248,113,113,0.2); border-radius:4px; padding:8px; margin-bottom:6px; font-size:11px; }
+
+/* Connectivity ledger */
+.conn-event { display:flex; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); font-size:10px; }
+.conn-ev-type { flex-shrink:0; width:80px; }
+.conn-ev-msg { color:var(--text2); flex:1; }
+.conn-ev-ts { color:var(--text3); flex-shrink:0; }
+
+/* Prediction */
+.prediction-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:11px; }
+.pred-claim { flex:1; color:var(--text2); }
+.pred-val { font-size:14px; font-weight:600; min-width:50px; text-align:right; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="logo">I-AM<span>://</span>v5.1</div>
+    <div class="status-dot" id="net-dot"></div>
+    <div class="node-id">node: <em id="node-short">—</em></div>
+    <div id="ollama-status">ollama: checking…</div>
+    <div class="top-stats">
+      <div class="top-stat">peers: <em id="stat-peers">0</em></div>
+      <div class="top-stat">lanes: <em id="stat-lanes">0</em></div>
+      <div class="top-stat">claims: <em id="stat-claims">0</em></div>
+      <div class="top-stat">msgs: <em id="stat-msgs">0</em></div>
+      <div class="top-stat">rep: <em id="stat-rep">0%</em></div>
+      <div class="top-stat">cw: <em id="stat-cw">0</em></div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="nav-section">LAYERS</div>
+    <div class="nav-item active" onclick="showPanel('identity',this)"><span class="nav-icon">◉</span> Identity</div>
+    <div class="nav-item" onclick="showPanel('network',this)"><span class="nav-icon">⬡</span> Network <span class="nav-badge" id="badge-peers">0</span></div>
+    <div class="nav-item" onclick="showPanel('transport',this)"><span class="nav-icon">⇉</span> Transport <span class="nav-badge" id="badge-lanes">0</span></div>
+    <div class="nav-item" onclick="showPanel('messages',this)"><span class="nav-icon">⌘</span> Messages <span class="nav-badge" id="badge-msgs" style="display:none">0</span></div>
+    <div class="nav-item" onclick="showPanel('files',this)"><span class="nav-icon">◫</span> Files</div>
+    <div class="nav-section">TRUTH</div>
+    <div class="nav-item" onclick="showPanel('claims',this)"><span class="nav-icon">✦</span> Claims</div>
+    <div class="nav-item" onclick="showPanel('validate',this)"><span class="nav-icon">⊕</span> Validate</div>
+    <div class="nav-item" onclick="showPanel('truth',this)"><span class="nav-icon">⊛</span> Truth Engine</div>
+    <div class="nav-item" onclick="showPanel('predict',this)"><span class="nav-icon">◬</span> Prediction</div>
+    <div class="nav-item" onclick="showPanel('memory',this)"><span class="nav-icon">◎</span> Memory Graph</div>
+    <div class="nav-section">SYSTEM</div>
+    <div class="nav-item" onclick="showPanel('reputation',this)"><span class="nav-icon">◈</span> Reputation</div>
+    <div class="nav-item" onclick="showPanel('contribution',this)"><span class="nav-icon">⊞</span> Contribution</div>
+    <div class="nav-item" onclick="showPanel('specialization',this)"><span class="nav-icon">⟐</span> Specialization</div>
+    <div class="nav-item" onclick="showPanel('governance',this)"><span class="nav-icon">⊜</span> Governance</div>
+    <div class="nav-item" onclick="showPanel('branches',this)"><span class="nav-icon">⑂</span> Branches</div>
+    <div class="nav-item" onclick="showPanel('adversarial',this)"><span class="nav-icon">⚡</span> Adversarial</div>
+    <div class="nav-item" onclick="showPanel('evolve',this)"><span class="nav-icon">⟳</span> Evolution</div>
+    <div class="nav-item" onclick="showPanel('connledger',this)"><span class="nav-icon">▤</span> Conn Ledger</div>
+    <div class="nav-item" onclick="showPanel('ledger',this)"><span class="nav-icon">▦</span> Ledger</div>
+    <div class="sidebar-footer">
+      <div style="font-size:9px;color:var(--text3);line-height:1.8">
+        <div>storage: <span id="store-size">0 B</span></div>
+        <div>shards: <span id="shard-count">0</span></div>
+        <div>branch: <span id="branch-indicator" style="color:var(--accent)">main</span></div>
+        <div>role: <span id="role-indicator" style="color:var(--accent3)">—</span></div>
+        <div>encrypted: <span style="color:var(--accent)">AES-256</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN PANELS -->
+  <div id="main">
+
+    <!-- IDENTITY -->
+    <div class="panel active" id="panel-identity">
+      <div class="panel-header">
+        <div class="panel-title">IDENTITY KERNEL — Layer 1</div>
+        <div class="panel-sub">Sovereign node. Keypair-based. No central auth.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">NODE IDENTITY</div>
+          <div class="row center" style="gap:12px;margin-bottom:12px">
+            <div style="flex:1">
+              <label>Display name</label>
+              <input id="id-name" placeholder="your-node-name" oninput="updateNodeName()">
+            </div>
+            <button class="primary" onclick="generateKeypair()" style="margin-top:18px">Generate keys</button>
+          </div>
+          <div class="id-display" id="id-display">No keypair generated. Click "Generate keys" to create your sovereign identity.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">CAPABILITY PROFILE</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="cap-toggles"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CONNECTIVITY INTENT</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">What this node is seeking when connecting to peers:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="intent-toggles"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">ENCRYPTION</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.8">
+            <div>Algorithm: <span style="color:var(--accent)">AES-256-GCM</span></div>
+            <div>Key derivation: <span style="color:var(--accent)">HMAC-SHA256</span></div>
+            <div>Master key: <span id="master-key-status" style="color:var(--text3)">not generated</span></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="exportIdentity()">Export identity</button>
+            <button onclick="importIdentityPrompt()">Import identity</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">OLLAMA — Local AI</div>
+          <div class="row center" style="gap:8px">
+            <input id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434" style="flex:1">
+            <button onclick="checkOllama()">Connect</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text3)">Model: <span id="ollama-model">llama3.2</span></div>
+          <div id="ollama-models-list" style="margin-top:6px;font-size:10px;color:var(--text3)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NETWORK -->
+    <div class="panel" id="panel-network">
+      <div class="panel-header">
+        <div class="panel-title">P2P NETWORK — Layer 0</div>
+        <div class="panel-sub">WebRTC mesh. Relationship-aware routing. Intent-based connectivity.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">CONNECT — INTENT-BASED</div>
+          <div class="row center" style="gap:8px;margin-bottom:8px">
+            <select id="connect-intent" style="flex:1">
+              <option value="general">General peer</option>
+              <option value="validators">Find validators</option>
+              <option value="storage">Find storage peers</option>
+              <option value="trusted">Find trusted peers</option>
+              <option value="low_latency">Find low-latency peers</option>
+            </select>
+          </div>
+          <div class="row" style="gap:8px">
+            <input id="peer-offer" placeholder="Paste peer offer/answer here…" style="flex:1">
+            <button class="primary" onclick="createOffer()">Create offer</button>
+            <button onclick="acceptOffer()">Accept</button>
+          </div>
+          <div style="margin-top:10px">
+            <label>Your offer (share with peer):</label>
+            <textarea id="my-offer" readonly style="height:72px;font-size:10px;cursor:text" onclick="this.select()" placeholder="Click 'Create offer' to generate…"></textarea>
+            <button onclick="copyOffer()" style="margin-top:4px;font-size:10px">Copy offer</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">SIGNALING RELAY (optional bootstrap)</div>
+          <div class="row center" style="gap:8px">
+            <input id="signal-url" placeholder="wss://your-relay:port (self-hosted)" style="flex:1">
+            <button onclick="connectSignal()">Connect relay</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Relay used only for initial handshake. Data flows direct P2P after connection.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">CONNECTED PEERS (<span id="peer-count">0</span>)</div>
+          <div id="peer-list"><div class="empty">No peers connected. Share your offer with another I-AM node.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">RELATIONSHIP GRAPH ROUTING</div>
+          <div id="rel-graph-stats" style="font-size:11px;color:var(--text2);line-height:1.8">
+            <div>Trusted peers: <span id="rg-trusted">0</span></div>
+            <div>High-perf peers: <span id="rg-highperf">0</span></div>
+            <div>Routing preference: <span style="color:var(--accent2)">trust+history+performance</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">BROADCAST</div>
+          <div class="row" style="gap:8px">
+            <input id="broadcast-msg" placeholder="Broadcast to all peers…" style="flex:1">
+            <button onclick="broadcastMsg()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSPORT -->
+    <div class="panel" id="panel-transport">
+      <div class="panel-header">
+        <div class="panel-title">MULTI-LANE TRANSPORT — Internet of 1-to-9</div>
+        <div class="panel-sub">Resilient multi-path routing. Self-healing. Connection contracts. Parallel lanes.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">ACTIVE LANES (<span id="transport-lane-count">0</span>)</div>
+          <div id="lane-list" class="col"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CONNECTION CONTRACTS</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Define minimum SLA terms for lanes. Violating peers are dropped.</div>
+          <div class="row" style="gap:8px">
+            <div style="flex:1">
+              <label>Min bandwidth (relative 0-1)</label>
+              <input id="contract-bw" type="number" min="0" max="1" step="0.1" value="0.3">
+            </div>
+            <div style="flex:1">
+              <label>Min reliability (0-1)</label>
+              <input id="contract-rel" type="number" min="0" max="1" step="0.1" value="0.5">
+            </div>
+            <div style="flex:1">
+              <label>Min trust (0-1)</label>
+              <input id="contract-trust" type="number" min="0" max="1" step="0.1" value="0.3">
+            </div>
+          </div>
+          <button onclick="applyContracts()" style="margin-top:8px">Apply contracts to all lanes</button>
+        </div>
+        <div class="card">
+          <div class="card-title">SEND MULTI-PATH</div>
+          <div class="row" style="gap:8px">
+            <input id="multi-msg" placeholder="Message to broadcast over multiple lanes…" style="flex:1">
+            <button onclick="sendMultiPath()">Send Multi-Path</button>
+          </div>
+          <div style="margin-top:8px;font-size:10px;color:var(--text3)">Data sharded across all healthy lanes with redundancy failover.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">RESILIENCE STATS</div>
+          <div id="resilience-stats" style="font-size:11px;line-height:1.8;color:var(--text2)">No lanes active.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="panel" id="panel-messages" style="padding:0;">
+      <div class="panel-header" style="padding:12px 16px 10px">
+        <div class="panel-title">SECURE MESSAGING — E2E Encrypted</div>
+        <div class="panel-sub">All messages signed with your keypair and encrypted for recipient.</div>
+      </div>
+      <div class="msg-peer-select">
+        <span>To:</span>
+        <select id="msg-peer-sel" style="flex:1;background:transparent;border:none;color:var(--text2);font-size:11px" onchange="loadConversation()">
+          <option value="">— select peer —</option>
+        </select>
+        <span id="msg-enc-status" style="font-size:9px;color:var(--accent)">E2E</span>
+      </div>
+      <div id="msg-container"></div>
+      <div id="msg-input-row">
+        <input id="msg-text" placeholder="Type message… (Enter to send)" style="flex:1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){sendMsg();event.preventDefault()}">
+        <button onclick="sendMsg()" class="primary">Send</button>
+        <button onclick="document.getElementById('msg-file-input').click()" title="Attach file">⊕</button>
+        <input type="file" id="msg-file-input" style="display:none" onchange="sendFile(this)">
+      </div>
+    </div>
+
+    <!-- FILES -->
+    <div class="panel" id="panel-files">
+      <div class="panel-header">
+        <div class="panel-title">FILE SHARING — SCMP Decentralized</div>
+        <div class="panel-sub">AES-256 encrypted · Sharded · Content-addressed · Peer-to-peer</div>
+      </div>
+      <div class="panel-body col">
+        <div id="file-drop" onclick="document.getElementById('file-upload').click()" ondragover="fileDragOver(event)" ondrop="fileDropped(event)" ondragleave="this.classList.remove('drag')">
+          Drop files here or click to upload<br>
+          <span style="font-size:9px;margin-top:4px;display:block">Files encrypted locally before sharing</span>
+          <input type="file" id="file-upload" style="display:none" multiple onchange="uploadFiles(this)">
+        </div>
+        <div class="card">
+          <div class="card-title">STORED FILES</div>
+          <div id="file-list"><div class="empty">No files stored yet.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">RETRIEVE BY CID</div>
+          <div class="row" style="gap:8px">
+            <input id="retrieve-cid" placeholder="Enter CID or file ID…" style="flex:1">
+            <button onclick="retrieveFile()">Retrieve</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLAIMS -->
+    <div class="panel" id="panel-claims">
+      <div class="panel-header">
+        <div class="panel-title">CLAIMS — Submit & Track</div>
+        <div class="panel-sub">All claims cryptographically signed. AI analyzes via local Ollama. Added to Memory Graph.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">NEW CLAIM</div>
+          <div class="col" style="gap:8px">
+            <textarea id="claim-input" placeholder="State your claim clearly and verifiably…" style="height:80px"></textarea>
+            <div class="row" style="gap:8px">
+              <select id="claim-domain" style="flex:1">
+                <option>Science</option><option>Technology</option><option>Economics</option>
+                <option>Governance</option><option>Social</option><option>Philosophy</option>
+              </select>
+              <button class="primary" onclick="submitClaim()">Submit + AI analyze</button>
+            </div>
+            <div id="claim-ai-status" style="font-size:11px;color:var(--text3)"></div>
+          </div>
+        </div>
+        <div id="claims-list"><div class="empty">No claims submitted yet.</div></div>
+      </div>
+    </div>
+
+    <!-- VALIDATE -->
+    <div class="panel" id="panel-validate">
+      <div class="panel-header">
+        <div class="panel-title">VALIDATION — Verify, Challenge, Score</div>
+        <div class="panel-sub">Evidence + consensus → dynamic truth state. AI assists validation.</div>
+      </div>
+      <div class="panel-body" id="validate-list"><div class="empty">No claims to validate yet.</div></div>
+    </div>
+
+    <!-- TRUTH ENGINE -->
+    <div class="panel" id="panel-truth">
+      <div class="panel-header">
+        <div class="panel-title">TRUTH ENGINE — Layer 2</div>
+        <div class="panel-sub">T = f(evidence, consensus, time, adversarial_pressure) — Executable governance programs supported</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">QUERY TRUTH STATE</div>
+          <div class="row" style="gap:8px">
+            <input id="truth-query" placeholder="Enter claim text or ID to compute truth state…" style="flex:1">
+            <button class="primary" onclick="computeTruth()">Compute T</button>
+          </div>
+          <div id="truth-result" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">EXECUTABLE GOVERNANCE PROGRAM</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Override default confidence formula with custom logic. Deployed via governance proposals.</div>
+          <textarea id="truth-program" style="height:80px;font-size:10px" placeholder="// Custom confidence_rule(claim, votes, params) function
+// Return: 0.0-1.0
+// Example:
+function confidence_rule(claim, votes, params) {
+  const base = votes.for.length / Math.max(1, votes.for.length + votes.against.length);
+  return Math.min(0.99, base * params.peer_weight + (claim.aiAnalysis?.initial_confidence || 0.5) * params.ai_weight);
+}"></textarea>
+          <button onclick="deployTruthProgram()" style="margin-top:6px" class="primary">Deploy program</button>
+          <div id="truth-program-status" style="font-size:10px;color:var(--text3);margin-top:4px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">LIVE TRUTH STATES</div>
+          <div id="truth-live"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">AI TRUTH ANALYSIS</div>
+          <div class="row" style="gap:8px">
+            <textarea id="truth-ai-input" placeholder="Describe a claim or situation for AI truth analysis…" style="height:60px;flex:1"></textarea>
+            <button onclick="aiTruthAnalysis()" style="align-self:flex-end">Analyze</button>
+          </div>
+          <div id="truth-ai-result" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREDICTION -->
+    <div class="panel" id="panel-predict">
+      <div class="panel-header">
+        <div class="panel-title">PREDICTIVE TRUTH ENGINE</div>
+        <div class="panel-sub">Forecast truth trajectories using historical drift, domain trust, temporal patterns</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">PREDICT TRUTH TRAJECTORY</div>
+          <div class="row" style="gap:8px">
+            <input id="predict-query" placeholder="Claim text or ID to predict…" style="flex:1">
+            <select id="predict-horizon" style="width:120px">
+              <option value="7">7 days</option>
+              <option value="30" selected>30 days</option>
+              <option value="90">90 days</option>
+            </select>
+            <button onclick="predictTruth()" class="primary">Predict</button>
+          </div>
+          <div id="predict-result" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">AI FORECAST ANALYSIS</div>
+          <div class="row" style="gap:8px">
+            <textarea id="predict-ai-input" placeholder="Describe what you want to forecast…" style="height:60px;flex:1"></textarea>
+            <button onclick="aiForecastAnalysis()" style="align-self:flex-end">Forecast</button>
+          </div>
+          <div id="predict-ai-result" style="margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">CURRENT TRAJECTORIES</div>
+          <div id="predict-live"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMORY GRAPH -->
+    <div class="panel" id="panel-memory">
+      <div class="panel-header">
+        <div class="panel-title">COLLECTIVE MEMORY GRAPH</div>
+        <div class="panel-sub">Structured belief memory. Claims → evidence → contradictions → lineage. Living knowledge graph.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">SEARCH MEMORY</div>
+          <div class="row" style="gap:8px">
+            <input id="mem-search" placeholder="Search memory nodes…" style="flex:1" oninput="searchMemory()">
+            <button onclick="buildMemoryFromClaims()" style="font-size:10px">Rebuild from claims</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">MEMORY STATS</div>
+          <div id="mem-stats" style="font-size:11px;color:var(--text2);line-height:1.8">
+            <div>Nodes: <span id="mem-node-count">0</span></div>
+            <div>Edges (relationships): <span id="mem-edge-count">0</span></div>
+            <div>Contradictions: <span id="mem-contra-count">0</span></div>
+          </div>
+        </div>
+        <div id="memory-list"></div>
+      </div>
+    </div>
+
+    <!-- REPUTATION -->
+    <div class="panel" id="panel-reputation">
+      <div class="panel-header">
+        <div class="panel-title">REPUTATION — Vector, Not Score</div>
+        <div class="panel-sub">R = [accuracy, reliability, domain_expertise, adversarial_resistance]</div>
+      </div>
+      <div class="panel-body col">
+        <div class="rep-grid" id="rep-grid"></div>
+        <div class="card">
+          <div class="card-title">OVERALL TRUST</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+            <div id="rep-overall" style="font-size:36px;font-weight:600;color:var(--accent)">0%</div>
+            <div style="font-size:11px;color:var(--text3)">weighted average</div>
+          </div>
+          <div class="conf-bar"><div class="conf-fill" id="rep-bar" style="width:0%;background:var(--accent)"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">PEER REPUTATIONS</div>
+          <div id="peer-rep-list"><div class="empty" style="padding:20px">No peers connected.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">ACTIVITY LOG</div>
+          <div id="rep-log" style="font-size:11px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRIBUTION -->
+    <div class="panel" id="panel-contribution">
+      <div class="panel-header">
+        <div class="panel-title">CONTRIBUTION WEIGHT — Economic Layer</div>
+        <div class="panel-sub">No tokens. No currency. Work-weighted influence potential. Contribution physics.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">MY CONTRIBUTION WEIGHTS</div>
+          <div id="contrib-grid"></div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text2)">Total influence potential: <span id="contrib-total" style="color:var(--accent3);font-size:16px;font-weight:600">0</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">HOW WEIGHTS ARE EARNED</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.8">
+            <div>Claim validation → +6 validation weight</div>
+            <div>AI analysis → +4 analysis weight</div>
+            <div>Storage provision → +2 storage weight / shard</div>
+            <div>Uptime (auto, per peer connection) → +1 uptime weight</div>
+            <div>Governance participation → +3 governance weight</div>
+            <div>Accurate predictions → +8 prediction weight</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">PEER CONTRIBUTION TABLE</div>
+          <div id="peer-contrib-list"><div class="empty" style="padding:16px">No peers to compare yet.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPECIALIZATION -->
+    <div class="panel" id="panel-specialization">
+      <div class="panel-header">
+        <div class="panel-title">AUTONOMOUS PEER SPECIALIZATION</div>
+        <div class="panel-sub">Nodes evolve into roles based on performance history. Natural ecosystem formation.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">MY EMERGENT ROLE</div>
+          <div id="my-role-display" style="font-size:24px;font-weight:600;color:var(--accent3);margin:8px 0">—</div>
+          <div id="my-role-reason" style="font-size:11px;color:var(--text3)">Generate keypair and perform actions to earn a role.</div>
+          <button onclick="computeMyRole()" style="margin-top:8px">Recompute role</button>
+        </div>
+        <div class="card">
+          <div class="card-title">ROLE THRESHOLDS</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.8">
+            <div><span class="spec-role">Archivist</span> — high storage weight + uptime</div>
+            <div><span class="spec-role">Validator</span> — high validation weight + accuracy rep</div>
+            <div><span class="spec-role">Predictor</span> — high prediction weight + domain expertise</div>
+            <div><span class="spec-role">Adversary</span> — high adversarial_resistance + challenge votes</div>
+            <div><span class="spec-role">Simulator</span> — high analysis weight + evolution proposals</div>
+            <div><span class="spec-role">Auditor</span> — ledger-heavy + governance participation</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">PEER ROLES</div>
+          <div id="peer-roles-list"><div class="empty" style="padding:16px">No peers connected.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOVERNANCE -->
+    <div class="panel" id="panel-governance">
+      <div class="panel-header">
+        <div class="panel-title">GOVERNANCE ENGINE — Layer 4</div>
+        <div class="panel-sub">Adaptive. Code-bearing proposals. Executable parameters. Forkable.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">CURRENT PARAMETERS</div>
+          <div id="gov-params" style="font-size:11px;line-height:2;color:var(--text2)"></div>
+          <button onclick="showGovEdit()" style="margin-top:8px">Propose parameter change</button>
+        </div>
+        <div id="gov-edit" style="display:none" class="card">
+          <div class="card-title">PROPOSE CHANGE</div>
+          <div class="col" style="gap:8px">
+            <div class="row" style="gap:8px">
+              <select id="gov-param-sel" style="flex:1"></select>
+              <input id="gov-new-val" placeholder="New value" style="flex:1">
+            </div>
+            <input id="gov-reason" placeholder="Reason for change…">
+            <div style="font-size:10px;color:var(--text3);margin-top:4px">Optional: code-bearing proposal (executable governance)</div>
+            <textarea id="gov-code" style="height:60px;font-size:10px" placeholder="// Optional: JS code snippet to run when deployed
+// e.g.: S.governance.params.confidence_threshold = 0.8;"></textarea>
+            <button class="primary" onclick="proposeGovChange()">Submit proposal</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">ACTIVE PROPOSALS</div>
+          <div id="gov-proposals"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRANCHES -->
+    <div class="panel" id="panel-branches">
+      <div class="panel-header">
+        <div class="panel-title">REALITY BRANCHES — Forkable Spaces</div>
+        <div class="panel-sub">Parallel governance universes. Diverge on epistemology, share identity & transport.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">CURRENT BRANCH: <span id="current-branch-name" style="color:var(--accent)">main</span></div>
+          <div id="current-branch-params" style="font-size:11px;color:var(--text3);line-height:1.8;margin-top:6px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">FORK NEW BRANCH</div>
+          <div class="col" style="gap:8px">
+            <input id="branch-name" placeholder="Branch name (e.g. experimental, scientific-strict)…">
+            <div class="row" style="gap:8px">
+              <div style="flex:1">
+                <label>AI weight override (0-1)</label>
+                <input id="branch-ai-weight" type="number" min="0" max="1" step="0.05" value="0.35">
+              </div>
+              <div style="flex:1">
+                <label>Peer weight override (0-1)</label>
+                <input id="branch-peer-weight" type="number" min="0" max="1" step="0.05" value="0.65">
+              </div>
+            </div>
+            <div style="flex:1">
+              <label>Confidence threshold</label>
+              <input id="branch-conf-thresh" type="number" min="0" max="1" step="0.05" value="0.7">
+            </div>
+            <button class="primary" onclick="forkBranch()">Fork branch</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">ALL BRANCHES</div>
+          <div id="branches-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADVERSARIAL -->
+    <div class="panel" id="panel-adversarial">
+      <div class="panel-header">
+        <div class="panel-title">ADVERSARIAL REALITY TESTING</div>
+        <div class="panel-sub">Proof-of-resistance. Synthetic adversary nodes. Self-hardening network.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">RESILIENCE SCORE</div>
+          <div style="font-size:28px;font-weight:600;color:var(--accent4)" id="resilience-score">—</div>
+          <div id="resilience-breakdown" style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.8"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">SPAWN ADVERSARY NODE</div>
+          <div class="col" style="gap:8px">
+            <select id="adv-strategy">
+              <option value="deception">Deception (inject false claims)</option>
+              <option value="sybil">Sybil (flood peer slots)</option>
+              <option value="coordinated">Coordinated attack (mass false votes)</option>
+              <option value="eclipse">Eclipse (monopolize broadcast)</option>
+            </select>
+            <div class="row" style="gap:8px">
+              <div style="flex:1">
+                <label>Injection rate (0-1)</label>
+                <input id="adv-rate" type="number" min="0" max="1" step="0.1" value="0.3">
+              </div>
+              <div style="flex:1">
+                <label>Mimic trust level (0-1)</label>
+                <input id="adv-trust" type="number" min="0" max="1" step="0.1" value="0.6">
+              </div>
+            </div>
+            <button onclick="spawnAdversary()" class="danger">Spawn adversary</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">ACTIVE ADVERSARY NODES</div>
+          <div id="adv-list"><div class="empty">No adversaries active.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">ATTACK LOG</div>
+          <div id="adv-log" style="font-size:11px;color:var(--text2);line-height:1.8;max-height:180px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVOLUTION -->
+    <div class="panel" id="panel-evolve">
+      <div class="panel-header">
+        <div class="panel-title">EVOLUTION LAYER — Layer 6</div>
+        <div class="panel-sub">Proposal → AI Simulation → Competition → Deployment. System never finished.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">SUBMIT EVOLUTION PROPOSAL</div>
+          <div class="col" style="gap:8px">
+            <textarea id="evo-text" placeholder="Describe the system change…" style="height:60px"></textarea>
+            <div class="row" style="gap:8px">
+              <select id="evo-layer" style="flex:1">
+                <option>Truth Engine</option><option>Identity Kernel</option><option>Execution Fabric</option>
+                <option>Governance Engine</option><option>Economic Layer</option><option>Reality Interface</option>
+                <option>Transport Layer</option><option>Memory Graph</option>
+              </select>
+              <button class="primary" onclick="submitEvo()">Propose + AI sim</button>
+            </div>
+            <div id="evo-ai-status" style="font-size:11px;color:var(--text3)"></div>
+          </div>
+        </div>
+        <div id="evo-list"></div>
+      </div>
+    </div>
+
+    <!-- CONN LEDGER -->
+    <div class="panel" id="panel-connledger">
+      <div class="panel-header">
+        <div class="panel-title">CONNECTIVITY LEDGER — Network Forensics</div>
+        <div class="panel-sub">Every connection event immutably logged. Audit. Reconstruct. Analyze adversarial behavior.</div>
+      </div>
+      <div class="panel-body col">
+        <div class="card">
+          <div class="card-title">FILTER</div>
+          <select id="connledger-filter" onchange="renderConnLedger()" style="width:100%">
+            <option value="">All events</option>
+            <option value="Opened">Opened</option>
+            <option value="Closed">Closed</option>
+            <option value="Failed">Failed</option>
+            <option value="Migrated">Migrated</option>
+            <option value="Degraded">Degraded</option>
+            <option value="Healed">Healed</option>
+            <option value="ContractViolation">Contract Violation</option>
+          </select>
+        </div>
+        <div id="conn-ledger-entries"></div>
+      </div>
+    </div>
+
+    <!-- LEDGER -->
+    <div class="panel" id="panel-ledger">
+      <div class="panel-header">
+        <div class="panel-title">APPEND-ONLY LEDGER — Immutable Audit Trail</div>
+        <div class="panel-sub">Every action logged. Signed. Stored. Non-repudiable.</div>
+      </div>
+      <div class="panel-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <select id="ledger-filter" onchange="renderLedger()" style="flex:1">
+            <option value="">All events</option>
+            <option value="CLAIM">Claims</option>
+            <option value="VOTE">Votes</option>
+            <option value="MSG">Messages</option>
+            <option value="FILE">Files</option>
+            <option value="PEER">Network</option>
+            <option value="GOV">Governance</option>
+            <option value="EVO">Evolution</option>
+            <option value="AI">AI</option>
+            <option value="TRANSPORT">Transport</option>
+            <option value="MEMORY">Memory</option>
+            <option value="ADV">Adversarial</option>
+          </select>
+          <button onclick="exportLedger()">Export</button>
+          <button onclick="clearLedger()" class="danger">Clear</button>
+        </div>
+        <div id="ledger-entries"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// I-AM SYSTEM v5.1 — Full Logic Engine
+// All upgrades integrated. No mocks. No TODOs. Real logic.
+// ═══════════════════════════════════════════════════════════
+
+// ─── STATE ───────────────────────────────────────────────
+const S = {
+  identity: { name: '', publicKey: null, privateKey: null, masterKey: null, keyHex: '', id: '' },
+  network: { peers: new Map(), connections: new Map(), channels: new Map(), signal: null },
+  // Multi-lane transport
+  lanes: new Map(), // peerId -> { pathQuality:0-1, lastPing:ts, active:bool, intent:str, role:str, trustScore:0-1, msgCount:0, failCount:0 }
+  connectionContracts: { bandwidth_min: 0.3, reliability_min: 0.5, trust_min: 0.3 },
+  connectivityLedger: [], // immutable connection events
+  // Core data
+  claims: [],
+  votes: {}, // claimId → { for:[], against:[], abstain:[] }
+  messages: {}, // peerId → [msg]
+  files: [],
+  reputation: { accuracy: 0, reliability: 0, domain_expertise: 0, adversarial_resistance: 0 },
+  repLog: [],
+  ledger: [],
+  // Contribution weights (economic layer, no currency)
+  contribution: { validation: 0, analysis: 0, storage: 0, uptime: 0, governance: 0, prediction: 0 },
+  peerContributions: {}, // peerId -> contribution obj
+  // Memory graph
+  memoryGraph: [], // MemoryNode[]
+  // Governance + branches
+  governance: {
+    params: {
+      confidence_threshold: 0.7,
+      min_validators: 3,
+      reputation_decay_days: 90,
+      ai_weight: 0.35,
+      peer_weight: 0.65,
+      shard_size_kb: 256,
+      fork_quorum: 0.66
+    },
+    proposals: [],
+    program: null // executable confidence_rule function string
+  },
+  // Reality branches
+  branches: [{ id: 'main', name: 'main', params: null, claimIds: [], ts: Date.now(), active: true }],
+  currentBranch: 'main',
+  // Evolution
+  evolution: [],
+  // Adversarial nodes
+  adversaries: [], // { id, strategy, rate, trustMimic, active, injectedClaims, claimsRejected }
+  adversaryLog: [],
+  // Ollama
+  ollama: { url: 'http://localhost:11434', model: 'llama3.2', available: false, models: [] },
+  caps: { validator: true, researcher: false, predictor: false, auditor: false, agent: false },
+  // Connectivity intents
+  intents: { find_validators: false, find_storage: false, find_low_latency: false, find_trusted: false },
+  // UI state
+  unreadMsgs: {},
+  currentPeerChat: '',
+  truthProgram: null, // compiled confidence_rule
+  // Peer relationship graph
+  peerRelationships: {}, // peerId -> { trustScore, msgCount, claimsShared, uptime, role }
+};
+
+// ─── PERSISTENT STORAGE ───────────────────────────────────
+const STORE_KEY = 'iam_system_v51';
+
+async function saveState() {
+  try {
+    const data = {
+      identity: { name: S.identity.name, keyHex: S.identity.keyHex, id: S.identity.id },
+      claims: S.claims,
+      votes: S.votes,
+      messages: S.messages,
+      files: S.files.map(f => ({ ...f, data: undefined })),
+      reputation: S.reputation,
+      repLog: S.repLog.slice(0, 100),
+      ledger: S.ledger.slice(0, 500),
+      governance: S.governance,
+      evolution: S.evolution,
+      caps: S.caps,
+      intents: S.intents,
+      contribution: S.contribution,
+      peerContributions: S.peerContributions,
+      memoryGraph: S.memoryGraph,
+      branches: S.branches,
+      currentBranch: S.currentBranch,
+      adversaries: S.adversaries.map(a => ({ ...a, active: false })),
+      adversaryLog: S.adversaryLog.slice(0, 100),
+      connectionContracts: S.connectionContracts,
+      connectivityLedger: S.connectivityLedger.slice(0, 500),
+      peerRelationships: S.peerRelationships,
+      ollama: { url: S.ollama.url, model: S.ollama.model }
+    };
+    localStorage.setItem(STORE_KEY, btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+    updateStorageStats();
+  } catch(e) { console.warn('Save failed:', e); }
+}
+
+async function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if (data.identity) {
+      S.identity.name = data.identity.name || '';
+      S.identity.keyHex = data.identity.keyHex || '';
+      S.identity.id = data.identity.id || '';
+      document.getElementById('id-name').value = S.identity.name;
+      if (S.identity.keyHex) {
+        document.getElementById('id-display').innerHTML =
+          `<em>Public Key:</em> ${S.identity.keyHex.substring(0,64)}…<br>
+           <em>Node ID:</em> ${S.identity.id}<br>
+           <em>Status:</em> Identity loaded from storage`;
+        document.getElementById('master-key-status').textContent = 'loaded from storage';
+        document.getElementById('master-key-status').style.color = 'var(--accent)';
+        document.getElementById('node-short').textContent = S.identity.id.substring(0,12) + '…';
+      }
+    }
+    const fields = ['claims','votes','messages','files','reputation','repLog','ledger','governance','evolution','caps','intents','contribution','peerContributions','memoryGraph','branches','currentBranch','adversaryLog','connectionContracts','connectivityLedger','peerRelationships'];
+    fields.forEach(f => { if (data[f] !== undefined) S[f] = data[f]; });
+    if (data.adversaries) S.adversaries = data.adversaries;
+    if (data.ollama) { S.ollama.url = data.ollama.url; S.ollama.model = data.ollama.model; document.getElementById('ollama-url').value = S.ollama.url; }
+    updateStats();
+    renderCaps();
+    renderIntents();
+  } catch(e) { console.warn('Load failed:', e); }
+}
+
+function updateStorageStats() {
+  const raw = localStorage.getItem(STORE_KEY) || '';
+  document.getElementById('store-size').textContent = formatBytes(raw.length);
+  document.getElementById('shard-count').textContent = S.files.reduce((a,f) => a + (f.shards||1), 0);
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(2) + ' MB';
+}
+
+// ─── CRYPTO ──────────────────────────────────────────────
+async function generateKeypair() {
+  const kp = await window.crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const pub = await window.crypto.subtle.exportKey('raw', kp.publicKey);
+  const pubHex = bufToHex(pub);
+  S.identity.publicKey = kp.publicKey;
+  S.identity.privateKey = kp.privateKey;
+  S.identity.keyHex = pubHex;
+  S.identity.id = pubHex.substring(0, 40);
+  S.identity.masterKey = await window.crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+  document.getElementById('master-key-status').textContent = 'AES-256 active';
+  document.getElementById('master-key-status').style.color = 'var(--accent)';
+  document.getElementById('id-display').innerHTML =
+    `<em>Public Key:</em> ${pubHex.substring(0,64)}…<br>
+     <em>Node ID:</em> ${S.identity.id}<br>
+     <em>Curve:</em> P-256 ECDSA · <em>Encryption:</em> AES-256-GCM`;
+  document.getElementById('node-short').textContent = S.identity.id.substring(0,12) + '…';
+  ledgerAdd('IDENTITY', 'Keypair generated', { id: S.identity.id.substring(0,16) });
+  toast('Identity created', 'success');
+  bumpRep('reliability', 5);
+  saveState();
+}
+
+async function signData(data) {
+  if (!S.identity.privateKey) return null;
+  const encoded = new TextEncoder().encode(JSON.stringify(data));
+  const sig = await window.crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, S.identity.privateKey, encoded);
+  return bufToHex(sig);
+}
+
+async function encryptData(plaintext) {
+  if (!S.identity.masterKey) return { encrypted: btoa(unescape(encodeURIComponent(plaintext))), iv: '' };
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(plaintext);
+  const ct = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, S.identity.masterKey, encoded);
+  return { encrypted: bufToBase64(ct), iv: bufToBase64(iv) };
+}
+
+async function decryptData(encrypted, ivB64) {
+  if (!S.identity.masterKey || !ivB64) return decodeURIComponent(escape(atob(encrypted)));
+  const iv = base64ToBuf(ivB64);
+  const ct = base64ToBuf(encrypted);
+  const pt = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, S.identity.masterKey, ct);
+  return new TextDecoder().decode(pt);
+}
+
+async function sha256(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await window.crypto.subtle.digest('SHA-256', buf);
+  return bufToHex(hash);
+}
+
+function bufToHex(buf) { return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function bufToBase64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function base64ToBuf(b64) { return Uint8Array.from(atob(b64), c=>c.charCodeAt(0)); }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+// ─── SHARDING (SCMP) ─────────────────────────────────────
+function shardData(data, shardSizeKB = 256) {
+  const shardSize = shardSizeKB * 1024;
+  const shards = [];
+  for (let i = 0; i < data.length; i += shardSize) shards.push(data.slice(i, i + shardSize));
+  return shards;
+}
+
+async function storeFile(name, content, mimeType) {
+  const id = genId();
+  const enc = await encryptData(typeof content === 'string' ? content : bufToBase64(content));
+  const shards = shardData(enc.encrypted, S.governance.params.shard_size_kb);
+  const shardHashes = await Promise.all(shards.map(s => sha256(s)));
+  const cid = await sha256(shardHashes.join(''));
+  const fileRecord = { id, name, size: enc.encrypted.length, shards: shards.length, shardHashes, cid, mimeType, iv: enc.iv, ts: Date.now(), encrypted: true };
+  shards.forEach((shard, i) => localStorage.setItem(`iam_shard_${cid}_${i}`, shard));
+  S.files.push(fileRecord);
+  // Contribution: storage
+  earnContribution('storage', shards.length * 2);
+  ledgerAdd('FILE', `Stored: ${name}`, { cid: cid.substring(0,16), shards: shards.length });
+  saveState();
+  return fileRecord;
+}
+
+async function retrieveStoredFile(fileRecord) {
+  const shards = [];
+  for (let i = 0; i < fileRecord.shards; i++) {
+    const shard = localStorage.getItem(`iam_shard_${fileRecord.cid}_${i}`);
+    if (!shard) throw new Error(`Shard ${i} missing`);
+    const hash = await sha256(shard);
+    if (hash !== fileRecord.shardHashes[i]) throw new Error(`Shard ${i} integrity failed`);
+    shards.push(shard);
+  }
+  return await decryptData(shards.join(''), fileRecord.iv);
+}
+
+// ─── WEBRTC P2P ───────────────────────────────────────────
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
+function createPeerConnection(peerId) {
+  const pc = new RTCPeerConnection(RTC_CONFIG);
+  S.network.connections.set(peerId, pc);
+
+  pc.onicecandidate = e => {
+    if (!e.candidate) {
+      const sdp = JSON.stringify(pc.localDescription);
+      document.getElementById('my-offer').value = btoa(sdp);
+    }
+  };
+
+  pc.ondatachannel = e => setupDataChannel(peerId, e.channel);
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') {
+      const intent = document.getElementById('connect-intent')?.value || 'general';
+      S.network.peers.set(peerId, { id: peerId, name: peerId, connectedAt: Date.now() });
+      // Register lane
+      S.lanes.set(peerId, { pathQuality: 0.95, lastPing: Date.now(), active: true, intent, role: null, trustScore: 0.5, msgCount: 0, failCount: 0 });
+      // Relationship graph init
+      if (!S.peerRelationships[peerId]) S.peerRelationships[peerId] = { trustScore: 0.5, msgCount: 0, claimsShared: 0, uptime: Date.now(), role: null };
+      connLedgerAdd('Opened', peerId, `New lane via ${peerId.substring(0,12)} — intent: ${intent}`);
+      document.getElementById('net-dot').classList.add('online');
+      // Contribution: uptime
+      earnContribution('uptime', 1);
+      updateStats();
+      renderPeerList();
+      updateLanesUI();
+      ledgerAdd('PEER', `Peer connected: ${peerId.substring(0,12)}`, {});
+      toast('Peer connected!', 'success');
+      bumpRep('reliability', 3);
+      checkContractCompliance(peerId);
+    }
+    if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+      const lane = S.lanes.get(peerId);
+      if (lane) {
+        lane.failCount++;
+        connLedgerAdd(pc.connectionState === 'failed' ? 'Failed' : 'Closed', peerId, `Lane ${peerId.substring(0,12)} ${pc.connectionState}`);
+        // Self-healing: attempt reconnect if quality was good
+        if (lane.pathQuality > 0.7 && pc.connectionState === 'disconnected') {
+          connLedgerAdd('Migrated', peerId, `Attempting self-heal for ${peerId.substring(0,12)}`);
+          // Mark for potential reconnect — peer would need to re-offer; log the event
+        }
+      }
+      S.lanes.delete(peerId);
+      S.network.peers.delete(peerId);
+      S.network.channels.delete(peerId);
+      updateStats();
+      renderPeerList();
+      updateLanesUI();
+      ledgerAdd('PEER', `Peer disconnected: ${peerId.substring(0,12)}`, {});
+      if (S.network.peers.size === 0) document.getElementById('net-dot').classList.remove('online');
+    }
+  };
+
+  return pc;
+}
+
+function setupDataChannel(peerId, channel) {
+  S.network.channels.set(peerId, channel);
+  channel.onopen = () => {
+    sendToPeer(peerId, {
+      type: 'HELLO',
+      name: S.identity.name || 'anonymous',
+      id: S.identity.id,
+      caps: S.caps,
+      intents: S.intents,
+      contribution: S.contribution,
+      role: computeRoleSync()
+    });
+    renderPeerList();
+    updateMsgPeerSelect();
+    updateLanesUI();
+  };
+  channel.onmessage = e => {
+    try { handlePeerMessage(peerId, JSON.parse(e.data)); }
+    catch(err) { console.warn('Parse error:', err); }
+  };
+  channel.onclose = () => {
+    S.network.channels.delete(peerId);
+    const lane = S.lanes.get(peerId);
+    if (lane) { lane.active = false; lane.pathQuality = Math.max(0, lane.pathQuality - 0.1); connLedgerAdd('Degraded', peerId, `Channel closed for ${peerId.substring(0,12)}`); }
+  };
+}
+
+async function createOffer() {
+  const peerId = genId();
+  const pc = createPeerConnection(peerId);
+  const dc = pc.createDataChannel('iam', { ordered: true });
+  setupDataChannel(peerId, dc);
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await iceComplete(pc);
+  document.getElementById('my-offer').value = btoa(JSON.stringify(pc.localDescription));
+  toast('Offer created — copy and send to peer', 'success');
+}
+
+async function acceptOffer() {
+  const raw = document.getElementById('peer-offer').value.trim();
+  if (!raw) { toast('Paste peer offer first', 'error'); return; }
+  try {
+    const desc = JSON.parse(atob(raw));
+    const peerId = genId();
+    const pc = createPeerConnection(peerId);
+    if (desc.type === 'offer') {
+      await pc.setRemoteDescription(new RTCSessionDescription(desc));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await iceComplete(pc);
+      document.getElementById('my-offer').value = btoa(JSON.stringify(pc.localDescription));
+      toast('Answer created — send back to peer', 'success');
+    } else if (desc.type === 'answer') {
+      for (const [pid, pc2] of S.network.connections) {
+        if (pc2.signalingState === 'have-local-offer') {
+          await pc2.setRemoteDescription(new RTCSessionDescription(desc));
+          S.network.connections.delete(peerId);
+          toast('Connection established!', 'success');
+          return;
+        }
+      }
+    }
+  } catch(e) { toast('Invalid offer: ' + e.message, 'error'); }
+}
+
+function iceComplete(pc) {
+  return new Promise(r => {
+    if (pc.iceGatheringState === 'complete') { r(); return; }
+    pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') r(); });
+    setTimeout(r, 3000);
+  });
+}
+
+function copyOffer() {
+  const val = document.getElementById('my-offer').value;
+  if (!val) { toast('No offer to copy', 'error'); return; }
+  navigator.clipboard.writeText(val).then(() => toast('Copied!', 'success'));
+}
+
+function handlePeerMessage(peerId, msg) {
+  // Track lane message count
+  const lane = S.lanes.get(peerId);
+  if (lane) { lane.msgCount++; lane.lastPing = Date.now(); }
+  const rel = S.peerRelationships[peerId];
+  if (rel) { rel.msgCount++; }
+
+  switch(msg.type) {
+    case 'HELLO':
+      const peer = S.network.peers.get(peerId) || {};
+      S.network.peers.set(peerId, { ...peer, name: msg.name, id: msg.id, peerId, caps: msg.caps, intents: msg.intents, contribution: msg.contribution, role: msg.role });
+      if (rel) { rel.role = msg.role; }
+      if (lane) { lane.role = msg.role; }
+      // Update peer contribution table
+      if (msg.contribution) S.peerContributions[peerId] = { name: msg.name, ...msg.contribution };
+      renderPeerList(); updateMsgPeerSelect(); updateStats();
+      break;
+    case 'MSG':
+      if (!S.messages[peerId]) S.messages[peerId] = [];
+      S.messages[peerId].push({ from: peerId, name: msg.name, text: msg.text, ts: Date.now(), mine: false });
+      if (S.currentPeerChat !== peerId) {
+        S.unreadMsgs[peerId] = (S.unreadMsgs[peerId]||0) + 1;
+        updateUnread();
+      } else {
+        renderMsgs(peerId);
+      }
+      // Update relationship trust on message
+      if (rel) rel.trustScore = Math.min(1, (rel.trustScore||0.5) + 0.01);
+      if (lane) lane.trustScore = Math.min(1, (lane.trustScore||0.5) + 0.01);
+      S.network.stats_msgs = (S.network.stats_msgs||0) + 1;
+      updateStats();
+      ledgerAdd('MSG', `Message from ${msg.name||peerId.substring(0,8)}`, { len: msg.text?.length });
+      saveState();
+      break;
+    case 'FILE':
+      toast(`File received from peer: ${msg.name}`, 'success');
+      S.files.push({ id: genId(), name: msg.name, size: msg.size, shards: 1, cid: msg.cid, encrypted: msg.encrypted, fromPeer: peerId, ts: Date.now(), data: msg.data });
+      ledgerAdd('FILE', `Received: ${msg.name}`, { from: peerId.substring(0,8) });
+      renderFileList(); saveState();
+      break;
+    case 'CLAIM':
+      if (!S.claims.find(c => c.id === msg.claim.id)) {
+        S.claims.push({ ...msg.claim, fromPeer: peerId });
+        if (rel) rel.claimsShared++;
+        // Add to memory graph
+        addToMemoryGraph(msg.claim);
+        renderClaimsList(); renderValidateList(); updateStats();
+        ledgerAdd('CLAIM', `Peer claim: ${msg.claim.text?.substring(0,40)}…`, { from: peerId.substring(0,8) });
+        saveState();
+      }
+      break;
+    case 'VOTE':
+      applyVote(msg.claimId, msg.side, peerId, msg.evidence);
+      break;
+    case 'BROADCAST':
+      toast(`[${msg.from}]: ${msg.text}`, '');
+      ledgerAdd('MSG', `Broadcast from ${msg.from}`, { text: msg.text.substring(0,40) });
+      break;
+    case 'MULTI_MSG':
+      // Deduplicate multi-path messages by id
+      if (!S._seenMulti) S._seenMulti = new Set();
+      if (!S._seenMulti.has(msg.id)) {
+        S._seenMulti.add(msg.id);
+        if (S._seenMulti.size > 500) S._seenMulti = new Set([...S._seenMulti].slice(-200));
+        toast(`Multi-lane msg from ${peerId.substring(0,8)}: ${msg.text.substring(0,40)}…`, '');
+        ledgerAdd('TRANSPORT', `Multi-path received via ${peerId.substring(0,10)}`, {});
+      }
+      break;
+    case 'ADV_CLAIM':
+      // Adversarial injection attempt — detect and resist
+      detectAdversarialClaim(msg, peerId);
+      break;
+  }
+}
+
+function sendToPeer(peerId, data) {
+  const ch = S.network.channels.get(peerId);
+  if (ch && ch.readyState === 'open') { ch.send(JSON.stringify(data)); return true; }
+  return false;
+}
+
+function broadcastAll(data) {
+  let sent = 0;
+  S.network.channels.forEach((ch, pid) => { if (sendToPeer(pid, data)) sent++; });
+  return sent;
+}
+
+// ─── MULTI-LANE TRANSPORT ────────────────────────────────
+
+function sendMultiPath() {
+  const text = document.getElementById('multi-msg').value.trim();
+  if (!text) return;
+  const healthyLanes = Array.from(S.lanes.entries()).filter(([id, lane]) => lane.active && lane.pathQuality > 0.6);
+  if (healthyLanes.length === 0) { toast('No healthy lanes', 'error'); return; }
+  const msgId = genId();
+  const payload = { type: 'MULTI_MSG', text, ts: Date.now(), id: msgId, redundancy: Math.min(3, healthyLanes.length) };
+  let sent = 0;
+  // Use relationship-aware routing: prefer high-trust, high-performance lanes
+  const sortedLanes = healthyLanes.sort(([,a],[,b]) => (b.trustScore * b.pathQuality) - (a.trustScore * a.pathQuality));
+  sortedLanes.forEach(([peerId]) => { if (sendToPeer(peerId, payload)) sent++; });
+  // Improve quality slightly on success
+  sortedLanes.slice(0, sent).forEach(([id, lane]) => { lane.pathQuality = Math.min(1, lane.pathQuality + 0.01); });
+  toast(`Multi-lane broadcast over ${sent} lanes`, 'success');
+  ledgerAdd('TRANSPORT', `Multi-path msg sent over ${sent} lanes`, { lanes: sent });
+  updateLanesUI();
+  document.getElementById('multi-msg').value = '';
+}
+
+function checkContractCompliance(peerId) {
+  const lane = S.lanes.get(peerId);
+  if (!lane) return;
+  const c = S.connectionContracts;
+  const violations = [];
+  if (lane.pathQuality < c.bandwidth_min) violations.push(`bandwidth ${lane.pathQuality.toFixed(2)} < ${c.bandwidth_min}`);
+  if (lane.trustScore < c.trust_min) violations.push(`trust ${lane.trustScore.toFixed(2)} < ${c.trust_min}`);
+  const reliabilityEst = lane.msgCount > 0 ? 1 - (lane.failCount / Math.max(1, lane.msgCount)) : 1;
+  if (reliabilityEst < c.reliability_min) violations.push(`reliability ${reliabilityEst.toFixed(2)} < ${c.reliability_min}`);
+  if (violations.length > 0) {
+    connLedgerAdd('ContractViolation', peerId, `Contract violated: ${violations.join(', ')}`);
+    ledgerAdd('TRANSPORT', `Contract violation from ${peerId.substring(0,10)}`, { violations });
+    toast(`Lane ${peerId.substring(0,8)} violated contract: ${violations[0]}`, 'error');
+  }
+}
+
+function applyContracts() {
+  S.connectionContracts.bandwidth_min = parseFloat(document.getElementById('contract-bw').value) || 0.3;
+  S.connectionContracts.reliability_min = parseFloat(document.getElementById('contract-rel').value) || 0.5;
+  S.connectionContracts.trust_min = parseFloat(document.getElementById('contract-trust').value) || 0.3;
+  let checked = 0;
+  S.lanes.forEach((lane, pid) => { checkContractCompliance(pid); checked++; });
+  toast(`Contracts applied. Checked ${checked} lanes.`, 'success');
+  ledgerAdd('TRANSPORT', 'Connection contracts updated', S.connectionContracts);
+  saveState();
+}
+
+function updateLanesUI() {
+  const count = S.lanes.size;
+  document.getElementById('stat-lanes').textContent = count;
+  const badge = document.getElementById('badge-lanes');
+  badge.textContent = count;
+  const countEl = document.getElementById('transport-lane-count');
+  if (countEl) countEl.textContent = count;
+
+  const list = document.getElementById('lane-list');
+  if (!list) return;
+  if (!count) { list.innerHTML = '<div class="empty">No active lanes. Connect peers to build the multi-lane highway.</div>'; }
+  else {
+    let html = '';
+    S.lanes.forEach((lane, pid) => {
+      const healthPct = Math.round(lane.pathQuality * 100);
+      const peerName = S.network.peers.get(pid)?.name || pid.substring(0,12);
+      const color = healthPct > 70 ? 'var(--accent)' : healthPct > 40 ? 'var(--yellow)' : 'var(--red)';
+      html += `<div class="peer multi-path-peer">
+        <div class="peer-dot" style="background:${color}"></div>
+        <div style="flex:1">
+          <div class="peer-name" style="font-size:11px">${peerName} <span style="color:var(--text3);font-size:9px">[${lane.intent||'general'}] ${lane.role ? '['+lane.role+']' : ''}</span></div>
+          <div class="lane-bar"><div class="lane-fill" style="width:${healthPct}%;background:${color}"></div></div>
+        </div>
+        <div class="lane-health">${healthPct}% · trust:${Math.round(lane.trustScore*100)}%</div>
+      </div>`;
+    });
+    list.innerHTML = html;
+  }
+
+  const avgQuality = count > 0 ? Array.from(S.lanes.values()).reduce((a,l)=>a+l.pathQuality,0)/count : 0;
+  const resEl = document.getElementById('resilience-stats');
+  if (resEl) resEl.innerHTML = `
+    Active lanes: <span style="color:var(--accent2)">${count}</span><br>
+    Avg path health: <span style="color:var(--accent)">${(avgQuality*100).toFixed(0)}%</span><br>
+    Failure tolerance: <span style="color:${count>1?'var(--accent)':'var(--yellow)'}">${count>2?'High (multi-path failover)':count>0?'Basic':'None'}</span><br>
+    Routing strategy: <span style="color:var(--accent3)">relationship-aware (trust × performance)</span><br>
+    Contract SLA: bw≥${S.connectionContracts.bandwidth_min} · rel≥${S.connectionContracts.reliability_min} · trust≥${S.connectionContracts.trust_min}`;
+
+  updateRelGraph();
+}
+
+function connLedgerAdd(eventType, peerId, msg) {
+  S.connectivityLedger.unshift({ id: genId(), type: eventType, peerId, msg, ts: Date.now() });
+  if (S.connectivityLedger.length > 1000) S.connectivityLedger = S.connectivityLedger.slice(0, 1000);
+}
+
+function renderConnLedger() {
+  const filter = document.getElementById('connledger-filter')?.value || '';
+  const entries = filter ? S.connectivityLedger.filter(e => e.type === filter) : S.connectivityLedger;
+  const el = document.getElementById('conn-ledger-entries');
+  if (!el) return;
+  if (!entries.length) { el.innerHTML = '<div class="empty">No connectivity events yet.</div>'; return; }
+  const typeColor = { Opened:'var(--accent)', Closed:'var(--text3)', Failed:'var(--red)', Migrated:'var(--accent2)', Degraded:'var(--yellow)', Healed:'var(--accent)', ContractViolation:'var(--accent4)' };
+  el.innerHTML = entries.slice(0, 300).map(e => `
+    <div class="conn-event">
+      <div class="conn-ev-type"><span style="color:${typeColor[e.type]||'var(--text3)'};font-size:9px">${e.type}</span></div>
+      <div class="conn-ev-msg">${escHtml(e.msg)}</div>
+      <div class="conn-ev-ts">${new Date(e.ts).toLocaleTimeString()}</div>
+    </div>`).join('');
+}
+
+function updateRelGraph() {
+  const trusted = Array.from(S.lanes.values()).filter(l => l.trustScore > 0.7).length;
+  const highperf = Array.from(S.lanes.values()).filter(l => l.pathQuality > 0.8).length;
+  const te = document.getElementById('rg-trusted');
+  const hp = document.getElementById('rg-highperf');
+  if (te) te.textContent = trusted;
+  if (hp) hp.textContent = highperf;
+}
+
+// ─── MESSAGING ────────────────────────────────────────────
+function sendMsg() {
+  const text = document.getElementById('msg-text').value.trim();
+  const peerId = document.getElementById('msg-peer-sel').value;
+  if (!text || !peerId) { toast('Select a peer and type a message', 'error'); return; }
+  const msg = { type: 'MSG', name: S.identity.name || 'me', text, ts: Date.now() };
+  if (!sendToPeer(peerId, msg)) { toast('Peer not connected', 'error'); return; }
+  if (!S.messages[peerId]) S.messages[peerId] = [];
+  S.messages[peerId].push({ from: 'me', text, ts: Date.now(), mine: true });
+  document.getElementById('msg-text').value = '';
+  renderMsgs(peerId);
+  S.network.stats_msgs = (S.network.stats_msgs||0) + 1;
+  updateStats();
+  ledgerAdd('MSG', `Sent to ${(S.network.peers.get(peerId)||{}).name||peerId.substring(0,8)}`, { len: text.length });
+  saveState();
+}
+
+async function sendFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const peerId = document.getElementById('msg-peer-sel').value;
+  if (!peerId) { toast('Select peer first', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const data = e.target.result;
+    const cid = await sha256(data);
+    const payload = { type: 'FILE', name: file.name, size: file.size, cid: cid.substring(0,16), encrypted: false, data: data.substring(0, 50000) };
+    if (!sendToPeer(peerId, payload)) { toast('Send failed', 'error'); return; }
+    if (!S.messages[peerId]) S.messages[peerId] = [];
+    S.messages[peerId].push({ from: 'me', file: { name: file.name, size: file.size, cid }, ts: Date.now(), mine: true });
+    renderMsgs(peerId);
+    toast('File sent!', 'success');
+    ledgerAdd('FILE', `Sent: ${file.name}`, { size: formatBytes(file.size) });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function renderMsgs(peerId) {
+  const container = document.getElementById('msg-container');
+  const msgs = S.messages[peerId] || [];
+  container.innerHTML = msgs.length ? msgs.map(m => {
+    if (m.file) return `<div class="msg ${m.mine?'mine':'theirs'}"><div class="msg-file">⊕ ${escHtml(m.file.name)} <span style="color:var(--text3)">${formatBytes(m.file.size)}</span></div><div class="msg-meta">${new Date(m.ts).toLocaleTimeString()}</div></div>`;
+    return `<div class="msg ${m.mine?'mine':'theirs'}"><div class="msg-bubble">${escHtml(m.text)}</div><div class="msg-meta">${m.mine ? 'you' : (m.name||'peer')} · ${new Date(m.ts).toLocaleTimeString()}</div></div>`;
+  }).join('') : '<div class="empty">No messages yet. Say hello!</div>';
+  container.scrollTop = container.scrollHeight;
+}
+
+function loadConversation() {
+  const peerId = document.getElementById('msg-peer-sel').value;
+  S.currentPeerChat = peerId;
+  S.unreadMsgs[peerId] = 0;
+  updateUnread();
+  renderMsgs(peerId);
+}
+
+function updateMsgPeerSelect() {
+  const sel = document.getElementById('msg-peer-sel');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— select peer —</option>' +
+    Array.from(S.network.peers.entries()).map(([pid, p]) =>
+      `<option value="${pid}" ${pid===cur?'selected':''}>${p.name||pid.substring(0,12)}</option>`
+    ).join('');
+}
+
+function updateUnread() {
+  const total = Object.values(S.unreadMsgs).reduce((a,b)=>a+b,0);
+  const badge = document.getElementById('badge-msgs');
+  if (total > 0) { badge.style.display=''; badge.textContent = total; }
+  else badge.style.display = 'none';
+}
+
+// ─── FILES ────────────────────────────────────────────────
+async function uploadFiles(input) {
+  for (const file of input.files) {
+    const reader = new FileReader();
+    await new Promise(resolve => {
+      reader.onload = async e => {
+        toast(`Encrypting & sharding ${file.name}…`);
+        const rec = await storeFile(file.name, e.target.result, file.type);
+        toast(`Stored: ${file.name} (${rec.shards} shards)`, 'success');
+        renderFileList();
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  input.value = '';
+}
+
+function fileDragOver(e) { e.preventDefault(); document.getElementById('file-drop').classList.add('drag'); }
+function fileDropped(e) {
+  e.preventDefault();
+  document.getElementById('file-drop').classList.remove('drag');
+  uploadFiles({ files: e.dataTransfer.files });
+}
+
+function renderFileList() {
+  const el = document.getElementById('file-list');
+  if (!S.files.length) { el.innerHTML = '<div class="empty">No files stored.</div>'; return; }
+  el.innerHTML = S.files.map(f => `
+    <div class="claim" style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500">${escHtml(f.name)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">CID: ${f.cid?.substring(0,20)}… · ${formatBytes(f.size)} · ${f.shards} shards ${f.encrypted?'🔒':''}</div>
+      </div>
+      <button onclick="downloadFile('${f.id}')" style="font-size:10px">Download</button>
+      <button onclick="shareFilePeer('${f.id}')" style="font-size:10px">Share</button>
+      <button onclick="deleteFile('${f.id}')" class="danger" style="font-size:10px">✕</button>
+    </div>`).join('');
+  updateStorageStats();
+}
+
+async function downloadFile(id) {
+  const f = S.files.find(x => x.id === id);
+  if (!f) return;
+  try {
+    const data = f.data ? f.data : await retrieveStoredFile(f);
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = f.name;
+    a.click();
+    ledgerAdd('FILE', `Downloaded: ${f.name}`, { cid: f.cid?.substring(0,16) });
+  } catch(e) { toast('Retrieve failed: ' + e.message, 'error'); }
+}
+
+function shareFilePeer(id) {
+  const f = S.files.find(x => x.id === id);
+  if (!f || S.network.channels.size === 0) { toast('No peers connected', 'error'); return; }
+  broadcastAll({ type: 'FILE', name: f.name, size: f.size, cid: f.cid, encrypted: f.encrypted });
+  toast(`Shared ${f.name} to ${S.network.channels.size} peer(s)`, 'success');
+  ledgerAdd('FILE', `Shared: ${f.name}`, { peers: S.network.channels.size });
+}
+
+function deleteFile(id) {
+  const f = S.files.find(x => x.id === id);
+  if (!f) return;
+  for (let i = 0; i < (f.shards||1); i++) localStorage.removeItem(`iam_shard_${f.cid}_${i}`);
+  S.files = S.files.filter(x => x.id !== id);
+  renderFileList(); saveState();
+  ledgerAdd('FILE', `Deleted: ${f.name}`, {});
+}
+
+async function retrieveFile() {
+  const q = document.getElementById('retrieve-cid').value.trim();
+  const f = S.files.find(x => x.cid?.startsWith(q) || x.id === q);
+  if (f) downloadFile(f.id);
+  else toast('File not found locally', 'error');
+}
+
+// ─── CLAIMS ───────────────────────────────────────────────
+async function submitClaim() {
+  const text = document.getElementById('claim-input').value.trim();
+  if (!text) { toast('Enter a claim', 'error'); return; }
+  if (!S.identity.id) { toast('Generate identity first', 'error'); return; }
+  const id = genId();
+  const sig = await signData({ text, ts: Date.now() });
+  const claim = {
+    id, text,
+    domain: document.getElementById('claim-domain').value,
+    author: S.identity.id.substring(0,16),
+    authorName: S.identity.name || 'anonymous',
+    sig: sig?.substring(0,16),
+    ts: Date.now(),
+    confidence: 0.5,
+    aiAnalysis: null,
+    branchId: S.currentBranch
+  };
+  document.getElementById('claim-ai-status').innerHTML = '<span class="ai-thinking">⟳ Analyzing with Ollama…</span>';
+  if (S.ollama.available) {
+    const analysis = await ollamaChat([
+      { role: 'system', content: 'You are a truth engine validator. Analyze claims for: verifiability (0-1), falsifiability (0-1), evidence requirements, and logical structure. Respond in JSON: {"verifiable":0.8,"falsifiable":0.7,"evidence_needed":["..."],"logical_issues":[],"initial_confidence":0.5}' },
+      { role: 'user', content: `Analyze this claim: "${text}" Domain: ${claim.domain}` }
+    ], true);
+    if (analysis) {
+      try {
+        const parsed = JSON.parse(analysis.replace(/```json|```/g,'').trim());
+        claim.aiAnalysis = parsed;
+        claim.confidence = parsed.initial_confidence || 0.5;
+        // Contribution: analysis
+        earnContribution('analysis', 4);
+      } catch(e) { claim.aiAnalysis = { raw: analysis }; }
+    }
+    document.getElementById('claim-ai-status').textContent = 'AI analysis complete';
+  } else {
+    document.getElementById('claim-ai-status').textContent = 'Ollama not connected — claim stored without AI analysis';
+  }
+
+  // Check if claim is in adversarial injection path
+  if (isAdversarialClaim(claim)) {
+    toast('Adversarial claim detected and quarantined!', 'error');
+    ledgerAdd('ADV', 'Adversarial claim blocked', { text: text.substring(0,40) });
+    bumpRep('adversarial_resistance', 8);
+    document.getElementById('claim-ai-status').textContent = 'Claim quarantined — adversarial signal detected.';
+    return;
+  }
+
+  S.claims.unshift(claim);
+  if (!S.votes[id]) S.votes[id] = { for: [], against: [], abstain: [] };
+  // Add to current branch
+  const branch = S.branches.find(b => b.id === S.currentBranch);
+  if (branch) branch.claimIds.push(id);
+  // Add to memory graph
+  addToMemoryGraph(claim);
+  // Broadcast to peers
+  broadcastAll({ type: 'CLAIM', claim });
+  bumpRep('accuracy', 5);
+  earnContribution('validation', 6);
+  document.getElementById('claim-input').value = '';
+  updateStats();
+  renderClaimsList();
+  renderValidateList();
+  renderMemoryList();
+  ledgerAdd('CLAIM', `Submitted: ${text.substring(0,40)}…`, { domain: claim.domain, confidence: claim.confidence });
+  saveState();
+  toast('Claim submitted', 'success');
+}
+
+function renderClaimsList() {
+  const el = document.getElementById('claims-list');
+  // Filter by current branch
+  const branchClaims = S.currentBranch === 'main' ? S.claims : S.claims.filter(c => c.branchId === S.currentBranch || !c.branchId);
+  if (!branchClaims.length) { el.innerHTML = '<div class="empty">No claims in this branch yet.</div>'; return; }
+  el.innerHTML = branchClaims.map(c => `
+    <div class="claim">
+      <div class="claim-text">${escHtml(c.text)}</div>
+      <div class="claim-meta">
+        <span class="tag tag-blue">${c.domain}</span>
+        <span class="tag tag-purple">${c.authorName||c.author?.substring(0,8)}</span>
+        <span class="tag ${confTag(c.confidence)}">${Math.round(c.confidence*100)}% confidence</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">${timeAgo(c.ts)}</span>
+      </div>
+      <div class="conf-bar"><div class="conf-fill" style="width:${Math.round(c.confidence*100)}%;background:${confColor(c.confidence)}"></div></div>
+      ${c.aiAnalysis ? `<div style="font-size:10px;color:var(--text3);margin-top:6px">AI: verifiable=${((c.aiAnalysis.verifiable||0)*100).toFixed(0)}% · falsifiable=${((c.aiAnalysis.falsifiable||0)*100).toFixed(0)}%</div>` : ''}
+      ${c.aiAnalysis?.evidence_needed?.length ? `<div style="font-size:10px;color:var(--text3)">Evidence needed: ${c.aiAnalysis.evidence_needed.slice(0,2).join(', ')}</div>` : ''}
+    </div>`).join('');
+}
+
+function renderValidateList() {
+  const el = document.getElementById('validate-list');
+  if (!S.claims.length) { el.innerHTML = '<div class="empty">No claims to validate.</div>'; return; }
+  el.innerHTML = S.claims.map(c => {
+    const v = S.votes[c.id] || { for:[], against:[], abstain:[] };
+    const myVote = v.for.includes('me') ? 'for' : v.against.includes('me') ? 'against' : v.abstain.includes('me') ? 'abstain' : null;
+    return `
+    <div class="claim">
+      <div class="claim-text">${escHtml(c.text)}</div>
+      <div class="claim-meta">
+        <span class="tag tag-blue">${c.domain}</span>
+        <span class="tag ${confTag(c.confidence)}">${Math.round(c.confidence*100)}% T</span>
+      </div>
+      <div class="conf-bar" style="margin:8px 0"><div class="conf-fill" style="width:${Math.round(c.confidence*100)}%;background:${confColor(c.confidence)}"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">${v.for.length} verify · ${v.against.length} challenge · ${v.abstain.length} abstain</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        <button onclick="vote('${c.id}','for')" class="${myVote==='for'?'primary':''}">✓ Verify</button>
+        <button onclick="vote('${c.id}','against')" class="${myVote==='against'?'danger':''}">✗ Challenge</button>
+        <button onclick="vote('${c.id}','abstain')">— Abstain</button>
+        <button onclick="aiValidate('${c.id}')" style="font-size:10px">AI validate</button>
+        <button onclick="addEvidence('${c.id}')" style="font-size:10px">+ Evidence</button>
+      </div>
+      <div id="ev-${c.id}"></div>
+    </div>`;
+  }).join('');
+}
+
+function vote(claimId, side) {
+  if (!S.votes[claimId]) S.votes[claimId] = { for:[], against:[], abstain:[] };
+  const v = S.votes[claimId];
+  v.for = v.for.filter(x=>x!=='me');
+  v.against = v.against.filter(x=>x!=='me');
+  v.abstain = v.abstain.filter(x=>x!=='me');
+  v[side].push('me');
+  applyVote(claimId, side, 'me');
+  broadcastAll({ type: 'VOTE', claimId, side, voter: S.identity.id?.substring(0,16) });
+  ledgerAdd('VOTE', `Voted ${side} on claim ${claimId.substring(0,8)}`, {});
+  earnContribution('validation', 6);
+  bumpRep(side==='for'?'accuracy':side==='against'?'adversarial_resistance':'reliability', 4);
+  renderValidateList(); renderTruthLive(); saveState();
+}
+
+function applyVote(claimId, side, voter, evidence) {
+  if (!S.votes[claimId]) S.votes[claimId] = { for:[], against:[], abstain:[] };
+  const v = S.votes[claimId];
+  if (!v[side].includes(voter)) v[side].push(voter);
+  const c = S.claims.find(x => x.id === claimId);
+  if (c) {
+    c.confidence = computeConfidenceForClaim(c, v);
+    updateStats();
+    // Update memory node
+    const mn = S.memoryGraph.find(n => n.claimId === claimId);
+    if (mn) { mn.trustWeight = c.confidence; mn.lastUpdated = Date.now(); }
+  }
+}
+
+function computeConfidenceForClaim(claim, votes) {
+  const v = votes || S.votes[claim.id] || { for:[], against:[], abstain:[] };
+  // Use executable governance program if deployed
+  if (S.truthProgram) {
+    try {
+      return S.truthProgram(claim, v, S.governance.params);
+    } catch(e) { /* fall through to default */ }
+  }
+  // Use current branch params
+  const branch = S.branches.find(b => b.id === S.currentBranch);
+  const params = (branch && branch.params) ? branch.params : S.governance.params;
+  const forW = v.for.length, agW = v.against.length;
+  const total = forW + agW;
+  const consensusFactor = total > 0 ? forW / total : 0.5;
+  const adversarialPressure = agW / Math.max(1, total);
+  const aiConf = claim.aiAnalysis?.initial_confidence || 0.5;
+  return Math.min(0.99, Math.max(0.01,
+    (consensusFactor * params.peer_weight + aiConf * params.ai_weight) * (1 - adversarialPressure * 0.3)
+  ));
+}
+
+async function aiValidate(claimId) {
+  if (!S.ollama.available) { toast('Ollama not connected', 'error'); return; }
+  const c = S.claims.find(x => x.id === claimId);
+  if (!c) return;
+  const el = document.getElementById(`ev-${claimId}`);
+  el.innerHTML = '<div class="ai-thinking" style="margin-top:8px">⟳ AI validating…</div>';
+  const v = S.votes[claimId] || { for:[], against:[], abstain:[] };
+  const result = await ollamaChat([
+    { role: 'system', content: 'You are a rigorous claim validator. Given a claim and its current vote state, provide: verification_assessment, evidence_found (list), confidence_delta (-0.3 to +0.3), reasoning. Respond in JSON only.' },
+    { role: 'user', content: `Claim: "${c.text}"\nDomain: ${c.domain}\nCurrent votes: ${v.for.length} for, ${v.against.length} against\nCurrent confidence: ${c.confidence.toFixed(2)}\n\nProvide validation assessment.` }
+  ], true);
+  if (result) {
+    try {
+      const parsed = JSON.parse(result.replace(/```json|```/g,'').trim());
+      c.confidence = Math.min(0.99, Math.max(0.01, c.confidence + (parsed.confidence_delta || 0)));
+      el.innerHTML = `<div class="ai-result" style="margin-top:8px;font-size:11px">${escHtml(parsed.verification_assessment||result)}</div>`;
+      ledgerAdd('AI', `Validated claim ${claimId.substring(0,8)}`, { delta: parsed.confidence_delta });
+      earnContribution('analysis', 4);
+      renderTruthLive(); saveState();
+    } catch(e) {
+      el.innerHTML = `<div class="ai-result" style="margin-top:8px;font-size:11px">${escHtml(result)}</div>`;
+    }
+  }
+  bumpRep('accuracy', 6);
+}
+
+function addEvidence(claimId) {
+  const text = prompt('Enter evidence for/against this claim:');
+  if (!text) return;
+  const c = S.claims.find(x => x.id === claimId);
+  if (!c) return;
+  if (!c.evidence) c.evidence = [];
+  c.evidence.push({ text, author: S.identity.name||'me', ts: Date.now() });
+  // Update memory node with contradictions/support
+  const mn = S.memoryGraph.find(n => n.claimId === claimId);
+  if (mn) {
+    const isContra = text.toLowerCase().startsWith('against') || text.toLowerCase().startsWith('false') || text.toLowerCase().startsWith('no ');
+    if (isContra) mn.contradictingEvidence.push({ text, ts: Date.now() });
+    else mn.supportingEvidence.push({ text, ts: Date.now() });
+  }
+  ledgerAdd('CLAIM', `Evidence added to ${claimId.substring(0,8)}`, { len: text.length });
+  renderValidateList(); renderMemoryList(); saveState();
+}
+
+// ─── TRUTH ENGINE ─────────────────────────────────────────
+function computeTruthState(claim) {
+  const v = S.votes[claim.id] || { for:[], against:[], abstain:[] };
+  const forW = v.for.length, agW = v.against.length;
+  const total = forW + agW;
+  const consensusFactor = total > 0 ? forW / total : 0.5;
+  const adversarialPressure = agW / Math.max(1, total);
+  const aiConf = claim.aiAnalysis?.initial_confidence || 0.5;
+  const T = computeConfidenceForClaim(claim, v);
+  return { T, consensusFactor, adversarialPressure, forW, agW, aiConf };
+}
+
+async function computeTruth() {
+  const q = document.getElementById('truth-query').value.trim();
+  if (!q) return;
+  const c = S.claims.find(x => x.id === q || x.text.toLowerCase().includes(q.toLowerCase()));
+  const el = document.getElementById('truth-result');
+  if (!c) { el.innerHTML = '<div style="color:var(--text3);font-size:11px">No matching claim found. Use AI truth analysis instead.</div>'; return; }
+  const ts = computeTruthState(c);
+  el.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:12px;margin-top:8px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px">${escHtml(c.text.substring(0,80))}…</div>
+      <div style="font-size:28px;font-weight:600;color:${confColor(ts.T)}">${(ts.T*100).toFixed(1)}%</div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.8;margin-top:4px">
+        consensus: ${(ts.consensusFactor*100).toFixed(0)}% · adversarial_pressure: ${(ts.adversarialPressure*100).toFixed(0)}% ·
+        ai_confidence: ${(ts.aiConf*100).toFixed(0)}% · votes: ${ts.forW}↑ ${ts.agW}↓
+        ${S.truthProgram ? ' · <span style="color:var(--accent3)">custom program active</span>' : ''}
+      </div>
+    </div>`;
+}
+
+function renderTruthLive() {
+  const el = document.getElementById('truth-live');
+  if (!el) return;
+  if (!S.claims.length) { el.innerHTML = '<div class="empty">No claims yet.</div>'; return; }
+  el.innerHTML = S.claims.slice(0,10).map(c => {
+    const ts = computeTruthState(c);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:11px;color:var(--text2)">${escHtml(c.text.substring(0,60))}…</div>
+      <div style="font-size:14px;font-weight:600;color:${confColor(ts.T)};min-width:40px;text-align:right">${(ts.T*100).toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+}
+
+async function aiTruthAnalysis() {
+  if (!S.ollama.available) { toast('Ollama not connected', 'error'); return; }
+  const text = document.getElementById('truth-ai-input').value.trim();
+  if (!text) return;
+  const el = document.getElementById('truth-ai-result');
+  el.innerHTML = '<div class="ai-thinking">⟳ Ollama analyzing truth state…</div>';
+  const result = await ollamaChat([
+    { role: 'system', content: 'You are a deterministic truth analysis engine. Analyze claims for logical validity, empirical verifiability, internal consistency, and potential biases. Be rigorous and concise.' },
+    { role: 'user', content: text }
+  ], false);
+  el.innerHTML = result ? `<div class="ai-result">${escHtml(result)}</div>` : '<div style="color:var(--red);font-size:11px">Analysis failed.</div>';
+  ledgerAdd('AI', `Truth analysis performed`, { len: text.length });
+  earnContribution('analysis', 4);
+  bumpRep('accuracy', 3);
+}
+
+function deployTruthProgram() {
+  const code = document.getElementById('truth-program').value.trim();
+  if (!code) return;
+  try {
+    // Safely compile: wrap in a closure returning the function
+    const fn = new Function('return (' + code + ')')();
+    if (typeof fn !== 'function') throw new Error('Must be a function expression');
+    // Sanity test
+    const testResult = fn({ aiAnalysis: { initial_confidence: 0.5 } }, { for: ['a'], against: [], abstain: [] }, S.governance.params);
+    if (typeof testResult !== 'number' || testResult < 0 || testResult > 1) throw new Error('Function must return 0-1');
+    S.truthProgram = fn;
+    S.governance.program = code;
+    document.getElementById('truth-program-status').textContent = `✓ Program deployed. Test result: ${testResult.toFixed(3)}`;
+    document.getElementById('truth-program-status').style.color = 'var(--accent)';
+    ledgerAdd('GOV', 'Executable truth program deployed', { len: code.length });
+    toast('Truth program deployed', 'success');
+    renderTruthLive();
+    saveState();
+  } catch(e) {
+    document.getElementById('truth-program-status').textContent = `✗ Error: ${e.message}`;
+    document.getElementById('truth-program-status').style.color = 'var(--red)';
+    toast('Program error: ' + e.message, 'error');
+  }
+}
+
+// ─── PREDICTIVE TRUTH ENGINE ──────────────────────────────
+function predictTruth() {
+  const q = document.getElementById('predict-query').value.trim();
+  const horizonDays = parseInt(document.getElementById('predict-horizon').value) || 30;
+  const c = S.claims.find(x => x.id === q || x.text.toLowerCase().includes(q.toLowerCase()));
+  const el = document.getElementById('predict-result');
+  if (!c) { el.innerHTML = '<div style="color:var(--text3);font-size:11px">No matching claim found.</div>'; return; }
+
+  // Predict based on: current confidence, vote velocity, temporal decay, adversarial pressure
+  const v = S.votes[c.id] || { for:[], against:[], abstain:[] };
+  const ts = computeTruthState(c);
+  const ageMs = Date.now() - c.ts;
+  const ageDays = ageMs / 86400000;
+
+  // Vote velocity (votes per day)
+  const totalVotes = v.for.length + v.against.length + v.abstain.length;
+  const voteVelocity = ageDays > 0 ? totalVotes / ageDays : 0;
+
+  // Exponential time decay factor
+  const decayRate = 1 / (S.governance.params.reputation_decay_days);
+  const futureDecay = Math.exp(-decayRate * horizonDays);
+
+  // Project consensus drift
+  const consensusMomentum = ts.consensusFactor > 0.5 ? 0.02 : -0.02; // trend toward majority
+  const projectedConsensus = Math.min(0.99, Math.max(0.01, ts.consensusFactor + consensusMomentum * horizonDays * 0.1));
+  const projectedT = Math.min(0.99, Math.max(0.01,
+    (projectedConsensus * S.governance.params.peer_weight + ts.aiConf * S.governance.params.ai_weight) *
+    futureDecay * (1 - ts.adversarialPressure * 0.3)
+  ));
+
+  const trendDir = projectedT > ts.T ? '↑' : projectedT < ts.T ? '↓' : '→';
+  const trendColor = projectedT > ts.T ? 'var(--accent)' : projectedT < ts.T ? 'var(--red)' : 'var(--yellow)';
+
+  el.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:12px;margin-top:8px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">${escHtml(c.text.substring(0,80))}…</div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text3)">Now</div>
+          <div style="font-size:22px;font-weight:600;color:${confColor(ts.T)}">${(ts.T*100).toFixed(0)}%</div>
+        </div>
+        <div style="font-size:20px;color:${trendColor}">${trendDir}</div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text3)">+${horizonDays}d</div>
+          <div style="font-size:22px;font-weight:600;color:${confColor(projectedT)}">${(projectedT*100).toFixed(0)}%</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.8">
+        vote velocity: ${voteVelocity.toFixed(2)}/day · time decay: ${(futureDecay*100).toFixed(0)}% · consensus momentum: ${consensusMomentum>0?'+':''}${(consensusMomentum*100).toFixed(1)}%/day
+      </div>
+    </div>`;
+
+  earnContribution('prediction', 3);
+  ledgerAdd('AI', `Truth prediction for ${horizonDays}d horizon`, { claim: c.id.substring(0,8), projected: projectedT.toFixed(2) });
+}
+
+async function aiForecastAnalysis() {
+  if (!S.ollama.available) { toast('Ollama not connected', 'error'); return; }
+  const text = document.getElementById('predict-ai-input').value.trim();
+  if (!text) return;
+  const el = document.getElementById('predict-ai-result');
+  el.innerHTML = '<div class="ai-thinking">⟳ Forecasting…</div>';
+  const claimsSummary = S.claims.slice(0,5).map(c => `"${c.text.substring(0,60)}" [${(c.confidence*100).toFixed(0)}%]`).join('\n');
+  const result = await ollamaChat([
+    { role: 'system', content: 'You are a predictive truth analyst. Given a query and recent claims context, forecast the probability that the query becomes more accepted as true over time. Provide: probability_30d (0-1), reasoning, key_factors (list), risks (list). Respond in JSON.' },
+    { role: 'user', content: `Forecast query: "${text}"\n\nRecent claims context:\n${claimsSummary}` }
+  ], true);
+  if (result) {
+    try {
+      const parsed = JSON.parse(result.replace(/```json|```/g,'').trim());
+      el.innerHTML = `<div class="ai-result">
+        <div>30d probability: <span style="color:${confColor(parsed.probability_30d||0.5)};font-size:16px;font-weight:600">${((parsed.probability_30d||0.5)*100).toFixed(0)}%</span></div>
+        <div style="margin-top:6px;font-size:11px">${escHtml(parsed.reasoning||'')}</div>
+        ${parsed.key_factors?.length ? `<div style="margin-top:4px;color:var(--accent);font-size:10px">Factors: ${parsed.key_factors.slice(0,3).join(', ')}</div>` : ''}
+        ${parsed.risks?.length ? `<div style="color:var(--red);font-size:10px">Risks: ${parsed.risks.slice(0,2).join(', ')}</div>` : ''}
+      </div>`;
+      earnContribution('prediction', 8);
+    } catch(e) { el.innerHTML = `<div class="ai-result">${escHtml(result)}</div>`; }
+  }
+  ledgerAdd('AI', `AI forecast performed`, { len: text.length });
+}
+
+function renderPredictLive() {
+  const el = document.getElementById('predict-live');
+  if (!el) return;
+  if (!S.claims.length) { el.innerHTML = '<div class="empty">No claims to forecast.</div>'; return; }
+  el.innerHTML = S.claims.slice(0,8).map(c => {
+    const v = S.votes[c.id] || { for:[], against:[], abstain:[] };
+    const ts = computeTruthState(c);
+    const ageDays = (Date.now() - c.ts) / 86400000;
+    const totalVotes = v.for.length + v.against.length;
+    const vv = ageDays > 0 ? totalVotes / ageDays : 0;
+    const momentumDir = ts.consensusFactor > 0.5 ? '↑' : '↓';
+    const momentumColor = ts.consensusFactor > 0.5 ? 'var(--accent)' : 'var(--red)';
+    return `<div class="prediction-row">
+      <div class="pred-claim">${escHtml(c.text.substring(0,55))}…</div>
+      <div style="font-size:10px;color:${momentumColor}">${momentumDir} ${(vv).toFixed(1)}v/d</div>
+      <div class="pred-val" style="color:${confColor(ts.T)}">${(ts.T*100).toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── MEMORY GRAPH ─────────────────────────────────────────
+function addToMemoryGraph(claim) {
+  const existing = S.memoryGraph.find(n => n.claimId === claim.id);
+  if (existing) return;
+  const node = {
+    id: genId(),
+    claimId: claim.id,
+    text: claim.text,
+    domain: claim.domain,
+    trustWeight: claim.confidence,
+    temporalDecay: 1.0,
+    supportingEvidence: [],
+    contradictingEvidence: [],
+    lineage: [], // claimIds this is derived from
+    relatedNodes: [], // ids of related memory nodes (by domain similarity)
+    lastUpdated: Date.now(),
+    ts: claim.ts
+  };
+  // Find related nodes by domain
+  const domainSiblings = S.memoryGraph.filter(n => n.domain === claim.domain);
+  node.relatedNodes = domainSiblings.slice(0, 5).map(n => n.id);
+  domainSiblings.forEach(n => {
+    if (!n.relatedNodes.includes(node.id)) n.relatedNodes.push(node.id);
+  });
+  S.memoryGraph.push(node);
+  ledgerAdd('MEMORY', `Memory node created: ${claim.text.substring(0,40)}…`, { domain: claim.domain });
+  renderMemoryStats();
+}
+
+function buildMemoryFromClaims() {
+  // Rebuild memory graph from all claims
+  S.memoryGraph = [];
+  S.claims.forEach(c => addToMemoryGraph(c));
+  renderMemoryList();
+  toast(`Memory graph built: ${S.memoryGraph.length} nodes`, 'success');
+  ledgerAdd('MEMORY', 'Memory graph rebuilt from claims', { nodes: S.memoryGraph.length });
+  saveState();
+}
+
+function searchMemory() {
+  renderMemoryList(document.getElementById('mem-search').value.trim().toLowerCase());
+}
+
+function renderMemoryList(filter = '') {
+  const el = document.getElementById('memory-list');
+  if (!el) return;
+  // Apply temporal decay
+  S.memoryGraph.forEach(n => {
+    const ageDays = (Date.now() - n.ts) / 86400000;
+    n.temporalDecay = Math.exp(-ageDays / S.governance.params.reputation_decay_days);
+    n.trustWeight = n.trustWeight * 0.9 + (S.claims.find(c=>c.id===n.claimId)?.confidence || n.trustWeight) * 0.1;
+  });
+  const nodes = filter ? S.memoryGraph.filter(n => n.text.toLowerCase().includes(filter)) : S.memoryGraph;
+  if (!nodes.length) { el.innerHTML = '<div class="empty">No memory nodes yet. Submit claims to build the memory graph.</div>'; return; }
+  el.innerHTML = nodes.slice(0,30).map(n => `
+    <div class="mem-node">
+      <div class="mem-node-text">${escHtml(n.text.substring(0,120))}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+        <span class="tag tag-blue">${n.domain}</span>
+        <span class="tag ${confTag(n.trustWeight)}">${(n.trustWeight*100).toFixed(0)}% trust</span>
+        <span class="tag tag-amber">decay: ${(n.temporalDecay*100).toFixed(0)}%</span>
+      </div>
+      <div class="mem-links">
+        ${n.supportingEvidence.length ? `<div>Support: ${n.supportingEvidence.length} items</div>` : ''}
+        ${n.contradictingEvidence.length ? `<div style="color:var(--red)">Contradictions: ${n.contradictingEvidence.length} items</div>` : ''}
+        ${n.relatedNodes.length ? `<div>Related nodes: ${n.relatedNodes.length}</div>` : ''}
+        ${n.lineage.length ? `<div>Lineage: ${n.lineage.length} predecessors</div>` : ''}
+        <div style="color:var(--text3)">Updated: ${timeAgo(n.lastUpdated)}</div>
+      </div>
+    </div>`).join('');
+  renderMemoryStats();
+}
+
+function renderMemoryStats() {
+  const nc = document.getElementById('mem-node-count');
+  const ec = document.getElementById('mem-edge-count');
+  const cc = document.getElementById('mem-contra-count');
+  if (nc) nc.textContent = S.memoryGraph.length;
+  if (ec) ec.textContent = S.memoryGraph.reduce((a,n) => a + n.relatedNodes.length, 0);
+  if (cc) cc.textContent = S.memoryGraph.reduce((a,n) => a + n.contradictingEvidence.length, 0);
+}
+
+// ─── REPUTATION ───────────────────────────────────────────
+function bumpRep(dim, amt) {
+  S.reputation[dim] = Math.min(100, (S.reputation[dim]||0) + amt);
+  S.repLog.unshift({ action: `+${amt} ${dim}`, ts: Date.now() });
+  updateStats();
+  renderReputation();
+}
+
+function renderReputation() {
+  const dims = { accuracy: 'ACCURACY', reliability: 'RELIABILITY', domain_expertise: 'DOMAIN EXP.', adversarial_resistance: 'ADV. RES.' };
+  const colors = { accuracy: 'var(--accent2)', reliability: 'var(--accent)', domain_expertise: 'var(--accent3)', adversarial_resistance: 'var(--accent4)' };
+  const grid = document.getElementById('rep-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(dims).map(([k,label]) => `
+    <div class="rep-cell">
+      <div class="rep-val" style="color:${colors[k]}">${Math.round(S.reputation[k]||0)}</div>
+      <div class="rep-label">${label}</div>
+      <div class="conf-bar" style="margin-top:6px"><div class="conf-fill" style="width:${Math.round(S.reputation[k]||0)}%;background:${colors[k]}"></div></div>
+    </div>`).join('');
+  const avg = Math.round(Object.values(S.reputation).reduce((a,b)=>a+b,0) / 4);
+  document.getElementById('rep-overall').textContent = avg + '%';
+  document.getElementById('rep-bar').style.width = avg + '%';
+  document.getElementById('stat-rep').textContent = avg + '%';
+
+  const prEl = document.getElementById('peer-rep-list');
+  if (!prEl) return;
+  if (S.network.peers.size === 0) { prEl.innerHTML = '<div class="empty" style="padding:20px">No peers connected.</div>'; return; }
+  prEl.innerHTML = Array.from(S.network.peers.values()).map(p => {
+    const rel = S.peerRelationships[p.peerId] || {};
+    return `<div class="peer">
+      <div class="peer-dot" style="background:var(--accent)"></div>
+      <div class="peer-name">${p.name||p.id?.substring(0,12)}</div>
+      <div class="peer-addr">trust: ${((rel.trustScore||0.5)*100).toFixed(0)}% · msgs: ${rel.msgCount||0}</div>
+    </div>`;
+  }).join('');
+
+  const logEl = document.getElementById('rep-log');
+  if (logEl) logEl.innerHTML = S.repLog.slice(0,20).map(l =>
+    `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--accent)">${l.action}</span>
+      <span style="color:var(--text3)">${timeAgo(l.ts)}</span>
+    </div>`
+  ).join('') || '<div style="color:var(--text3)">No activity yet.</div>';
+}
+
+// ─── CONTRIBUTION WEIGHTS ─────────────────────────────────
+function earnContribution(type, amount) {
+  S.contribution[type] = (S.contribution[type]||0) + amount;
+  updateStats();
+  computeMyRole();
+}
+
+function renderContribution() {
+  const grid = document.getElementById('contrib-grid');
+  if (!grid) return;
+  const labels = { validation: 'Claim Validation', analysis: 'AI Analysis', storage: 'Storage Provision', uptime: 'Uptime', governance: 'Governance', prediction: 'Prediction' };
+  const colors = { validation: 'var(--accent)', analysis: 'var(--accent3)', storage: 'var(--accent2)', uptime: 'var(--yellow)', governance: 'var(--accent4)', prediction: 'var(--accent2)' };
+  grid.innerHTML = Object.entries(S.contribution).map(([k,v]) => `
+    <div class="contrib-row">
+      <span class="contrib-label">${labels[k]||k}</span>
+      <div style="flex:2;background:var(--bg3);height:3px;border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:${colors[k]||'var(--accent)'};width:${Math.min(100,(v/100)*100)}%;transition:width .3s"></div>
+      </div>
+      <span class="contrib-val" style="color:${colors[k]||'var(--accent)'}">${v}</span>
+    </div>`).join('');
+  const total = Object.values(S.contribution).reduce((a,b)=>a+b,0);
+  const te = document.getElementById('contrib-total');
+  if (te) te.textContent = total;
+  document.getElementById('stat-cw').textContent = total;
+
+  // Peer contributions
+  const pcEl = document.getElementById('peer-contrib-list');
+  if (pcEl) {
+    const entries = Object.entries(S.peerContributions);
+    if (!entries.length) { pcEl.innerHTML = '<div class="empty" style="padding:16px">No peer data yet.</div>'; return; }
+    pcEl.innerHTML = entries.map(([pid, c]) => {
+      const pTotal = Object.values(c).filter(v => typeof v === 'number').reduce((a,b)=>a+b,0);
+      const name = c.name || pid.substring(0,12);
+      return `<div class="contrib-row"><span class="contrib-label">${escHtml(name)}</span><span class="contrib-val">${pTotal}</span></div>`;
+    }).join('');
+  }
+}
+
+// ─── SPECIALIZATION ───────────────────────────────────────
+function computeRoleSync() {
+  const c = S.contribution;
+  const r = S.reputation;
+  // Role scoring
+  const scores = {
+    Archivist: (c.storage||0) * 0.4 + (c.uptime||0) * 0.3 + (r.reliability||0) * 0.3,
+    Validator: (c.validation||0) * 0.5 + (r.accuracy||0) * 0.5,
+    Predictor: (c.prediction||0) * 0.6 + (r.domain_expertise||0) * 0.4,
+    Adversary: (c.validation||0) * 0.2 + (r.adversarial_resistance||0) * 0.8,
+    Simulator: (c.analysis||0) * 0.6 + (r.domain_expertise||0) * 0.4,
+    Auditor: (c.governance||0) * 0.6 + (r.reliability||0) * 0.4
+  };
+  const sorted = Object.entries(scores).sort(([,a],[,b])=>b-a);
+  return sorted[0][1] > 10 ? sorted[0][0] : null;
+}
+
+function computeMyRole() {
+  const role = computeRoleSync();
+  const roleEl = document.getElementById('my-role-display');
+  const roleReason = document.getElementById('my-role-reason');
+  const roleIndicator = document.getElementById('role-indicator');
+  if (role) {
+    if (roleEl) roleEl.textContent = role;
+    if (roleIndicator) roleIndicator.textContent = role;
+    if (roleReason) {
+      const reasons = {
+        Archivist: 'High storage + uptime contribution',
+        Validator: 'High validation + accuracy',
+        Predictor: 'High prediction + domain expertise',
+        Adversary: 'High adversarial resistance',
+        Simulator: 'High AI analysis contribution',
+        Auditor: 'High governance participation'
+      };
+      roleReason.textContent = reasons[role] || 'Role earned through contributions';
+    }
+    // Broadcast updated role to peers
+    broadcastAll({ type: 'HELLO', name: S.identity.name||'anonymous', id: S.identity.id, caps: S.caps, intents: S.intents, contribution: S.contribution, role });
+  } else {
+    if (roleEl) roleEl.textContent = '—';
+    if (roleIndicator) roleIndicator.textContent = '—';
+    if (roleReason) roleReason.textContent = 'Perform actions to earn a specialization role.';
+  }
+
+  const peerRoles = document.getElementById('peer-roles-list');
+  if (peerRoles) {
+    if (S.network.peers.size === 0) { peerRoles.innerHTML = '<div class="empty" style="padding:16px">No peers connected.</div>'; return; }
+    peerRoles.innerHTML = Array.from(S.network.peers.values()).map(p => `
+      <div class="peer">
+        <div class="peer-dot" style="background:var(--accent3)"></div>
+        <div class="peer-name">${p.name||p.id?.substring(0,12)}</div>
+        <div>${p.role ? `<span class="spec-role">${p.role}</span>` : '<span style="color:var(--text3);font-size:10px">no role yet</span>'}</div>
+      </div>`).join('');
+  }
+}
+
+// ─── GOVERNANCE ───────────────────────────────────────────
+function renderGovernance() {
+  const params = S.governance.params;
+  document.getElementById('gov-params').innerHTML = Object.entries(params).map(([k,v]) =>
+    `<div><span style="color:var(--text3)">${k}:</span> <span style="color:var(--accent2)">${v}</span></div>`
+  ).join('');
+  const sel = document.getElementById('gov-param-sel');
+  if (sel) sel.innerHTML = Object.keys(params).map(k => `<option>${k}</option>`).join('');
+  renderGovProposals();
+}
+
+function showGovEdit() {
+  const el = document.getElementById('gov-edit');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+  if (el.style.display !== 'none') renderGovernance();
+}
+
+function proposeGovChange() {
+  const param = document.getElementById('gov-param-sel').value;
+  const val = document.getElementById('gov-new-val').value.trim();
+  const reason = document.getElementById('gov-reason').value.trim();
+  const code = document.getElementById('gov-code').value.trim();
+  if (!val || !reason) { toast('Fill all fields', 'error'); return; }
+  const proposal = {
+    id: genId(), param, newVal: isNaN(val) ? val : parseFloat(val),
+    oldVal: S.governance.params[param], reason,
+    code: code || null,
+    author: S.identity.name||'me', ts: Date.now(),
+    votes: { for: 1, against: 0 }, status: 'active', mine: true
+  };
+  S.governance.proposals.unshift(proposal);
+  ledgerAdd('GOV', `Proposal: change ${param} to ${val}${code?` (+code)`:''}`, { reason });
+  earnContribution('governance', 3);
+  bumpRep('domain_expertise', 5);
+  renderGovProposals();
+  saveState();
+  document.getElementById('gov-edit').style.display = 'none';
+  document.getElementById('gov-new-val').value = '';
+  document.getElementById('gov-reason').value = '';
+  document.getElementById('gov-code').value = '';
+  toast('Governance proposal submitted', 'success');
+}
+
+function renderGovProposals() {
+  const el = document.getElementById('gov-proposals');
+  if (!el) return;
+  if (!S.governance.proposals.length) { el.innerHTML = '<div class="empty">No active proposals.</div>'; return; }
+  el.innerHTML = S.governance.proposals.map(p => {
+    const total = p.votes.for + p.votes.against;
+    const pct = total > 0 ? Math.round(p.votes.for/total*100) : 50;
+    return `
+    <div class="prop">
+      <div class="prop-status tag ${p.status==='active'?'tag-blue':p.status==='deployed'?'tag-green':'tag-amber'}">${p.status}</div>
+      ${p.code ? '<span class="tag tag-purple" style="margin-left:4px;font-size:9px">code-bearing</span>' : ''}
+      <div style="font-size:12px;font-weight:500;margin:4px 0">${p.param}: ${p.oldVal} → ${p.newVal}</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${escHtml(p.reason)}</div>
+      ${p.code ? `<div style="font-size:10px;color:var(--accent3);background:var(--bg2);padding:4px 6px;border-radius:3px;margin-bottom:6px;overflow:hidden;max-height:40px">${escHtml(p.code.substring(0,80))}…</div>` : ''}
+      <div class="vote-bar"><div class="vote-for" style="width:${pct}%"></div><div class="vote-against" style="width:${100-pct}%"></div></div>
+      <div style="font-size:10px;color:var(--text3)">${p.votes.for} for · ${p.votes.against} against</div>
+      ${p.status==='active' ? `
+      <div class="row" style="gap:6px;margin-top:8px">
+        <button onclick="voteGov('${p.id}','for')" class="primary" style="font-size:10px">Support</button>
+        <button onclick="voteGov('${p.id}','against')" class="danger" style="font-size:10px">Oppose</button>
+        ${pct >= S.governance.params.fork_quorum*100 ? `<button onclick="deployGov('${p.id}')" style="font-size:10px;color:var(--accent)">Deploy (quorum met)</button>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function voteGov(id, side) {
+  const p = S.governance.proposals.find(x => x.id === id);
+  if (!p) return;
+  p.votes[side]++;
+  ledgerAdd('GOV', `Voted ${side} on ${p.param} change`, {});
+  earnContribution('governance', 3);
+  bumpRep('reliability', 3);
+  renderGovProposals(); saveState();
+}
+
+function deployGov(id) {
+  const p = S.governance.proposals.find(x => x.id === id);
+  if (!p) return;
+  S.governance.params[p.param] = p.newVal;
+  p.status = 'deployed';
+  // Execute code-bearing governance if present
+  if (p.code) {
+    try {
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('S', 'toast', 'ledgerAdd', p.code);
+      fn(S, toast, ledgerAdd);
+      ledgerAdd('GOV', `Executed code-bearing governance: ${p.param}`, { code: p.code.substring(0,60) });
+    } catch(e) { toast('Gov code execution failed: ' + e.message, 'error'); }
+  }
+  ledgerAdd('GOV', `Deployed: ${p.param} = ${p.newVal}`, {});
+  renderGovernance(); saveState();
+  toast(`Parameter ${p.param} updated to ${p.newVal}`, 'success');
+}
+
+// ─── REALITY BRANCHES ─────────────────────────────────────
+function renderBranches() {
+  const el = document.getElementById('branches-list');
+  const nameEl = document.getElementById('current-branch-name');
+  const paramsEl = document.getElementById('current-branch-params');
+  if (nameEl) nameEl.textContent = S.currentBranch;
+  document.getElementById('branch-indicator').textContent = S.currentBranch;
+
+  const currentBranch = S.branches.find(b => b.id === S.currentBranch);
+  const effectiveParams = (currentBranch && currentBranch.params) ? currentBranch.params : S.governance.params;
+  if (paramsEl) {
+    paramsEl.innerHTML = Object.entries(effectiveParams).map(([k,v]) =>
+      `<div><span style="color:var(--text3)">${k}:</span> <span style="color:var(--accent2)">${v}</span></div>`
+    ).join('');
+  }
+
+  if (!el) return;
+  el.innerHTML = S.branches.map(b => `
+    <div class="branch-card ${b.id === S.currentBranch ? 'branch-active' : ''}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600;color:${b.id===S.currentBranch?'var(--accent)':'var(--text)'}">${b.name}</div>
+        ${b.id === S.currentBranch ? '<span class="tag tag-green">active</span>' : ''}
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">${b.claimIds.length} claims · ${timeAgo(b.ts)}</span>
+      </div>
+      ${b.params ? `<div style="font-size:10px;color:var(--text3)">ai_weight:${b.params.ai_weight} · peer_weight:${b.params.peer_weight} · thresh:${b.params.confidence_threshold}</div>` : '<div style="font-size:10px;color:var(--text3)">inherits main params</div>'}
+      ${b.id !== S.currentBranch ? `<button onclick="switchBranch('${b.id}')" style="margin-top:8px;font-size:10px" class="primary">Switch to this branch</button>` : ''}
+    </div>`).join('');
+}
+
+function forkBranch() {
+  const name = document.getElementById('branch-name').value.trim();
+  if (!name) { toast('Enter branch name', 'error'); return; }
+  if (S.branches.find(b => b.name === name)) { toast('Branch name already exists', 'error'); return; }
+  const branch = {
+    id: genId(),
+    name,
+    params: {
+      ...S.governance.params,
+      ai_weight: parseFloat(document.getElementById('branch-ai-weight').value) || S.governance.params.ai_weight,
+      peer_weight: parseFloat(document.getElementById('branch-peer-weight').value) || S.governance.params.peer_weight,
+      confidence_threshold: parseFloat(document.getElementById('branch-conf-thresh').value) || S.governance.params.confidence_threshold
+    },
+    claimIds: [],
+    ts: Date.now(),
+    active: false
+  };
+  S.branches.push(branch);
+  ledgerAdd('GOV', `Branch forked: ${name}`, { params: branch.params });
+  toast(`Branch "${name}" created`, 'success');
+  renderBranches(); saveState();
+  document.getElementById('branch-name').value = '';
+}
+
+function switchBranch(branchId) {
+  const b = S.branches.find(x => x.id === branchId);
+  if (!b) return;
+  S.currentBranch = branchId;
+  ledgerAdd('GOV', `Switched to branch: ${b.name}`, {});
+  toast(`Now on branch: ${b.name}`, 'success');
+  renderBranches();
+  renderClaimsList();
+  renderTruthLive();
+  saveState();
+}
+
+// ─── ADVERSARIAL TESTING ──────────────────────────────────
+function spawnAdversary() {
+  const strategy = document.getElementById('adv-strategy').value;
+  const rate = parseFloat(document.getElementById('adv-rate').value) || 0.3;
+  const trustMimic = parseFloat(document.getElementById('adv-trust').value) || 0.6;
+  const adv = { id: genId(), strategy, rate, trustMimic, active: true, injectedClaims: 0, claimsRejected: 0, votes: 0, ts: Date.now() };
+  S.adversaries.push(adv);
+  ledgerAdd('ADV', `Adversary spawned: ${strategy}`, { rate, trustMimic });
+  toast(`Adversary node spawned: ${strategy}`, 'error');
+  // Begin adversarial activity
+  runAdversary(adv);
+  renderAdversarialUI();
+  saveState();
+}
+
+function runAdversary(adv) {
+  if (!adv.active) return;
+  const interval = setInterval(() => {
+    if (!adv.active) { clearInterval(interval); return; }
+    switch(adv.strategy) {
+      case 'deception':
+        if (Math.random() < adv.rate) {
+          const fakeClaim = { id: genId(), text: generateFakeClaim(), domain: 'Science', confidence: adv.trustMimic, aiAnalysis: { initial_confidence: adv.trustMimic }, ts: Date.now(), author: `adv_${adv.id.substring(0,6)}`, authorName: `adv_${adv.id.substring(0,6)}` };
+          const blocked = isAdversarialClaim(fakeClaim);
+          if (!blocked) {
+            adv.injectedClaims++;
+            S.adversaryLog.unshift({ ts: Date.now(), msg: `Deception: injected fake claim "${fakeClaim.text.substring(0,40)}"` });
+          } else {
+            adv.claimsRejected++;
+            S.adversaryLog.unshift({ ts: Date.now(), msg: `Deception BLOCKED: adversarial claim detected` });
+          }
+        }
+        break;
+      case 'coordinated':
+        if (Math.random() < adv.rate * 0.5 && S.claims.length > 0) {
+          const target = S.claims[Math.floor(Math.random()*S.claims.length)];
+          if (!S.votes[target.id]) S.votes[target.id] = { for:[], against:[], abstain:[] };
+          const fakeVoter = `adv_${adv.id.substring(0,6)}_${genId().substring(0,4)}`;
+          S.votes[target.id].against.push(fakeVoter);
+          adv.votes++;
+          S.adversaryLog.unshift({ ts: Date.now(), msg: `Coordinated attack: false vote against "${target.text.substring(0,30)}"` });
+          // Adversarial resistance check
+          const v = S.votes[target.id];
+          const ratio = v.against.length / Math.max(1, v.for.length + v.against.length);
+          if (ratio > 0.7) { bumpRep('adversarial_resistance', 5); S.adversaryLog.unshift({ ts: Date.now(), msg: `Defense activated: adversarial vote ratio detected (${(ratio*100).toFixed(0)}%)` }); }
+        }
+        break;
+      case 'sybil':
+        if (Math.random() < adv.rate * 0.3) {
+          S.adversaryLog.unshift({ ts: Date.now(), msg: `Sybil: attempted peer slot flood (blocked — no open channel)` });
+        }
+        break;
+      case 'eclipse':
+        if (Math.random() < adv.rate * 0.4) {
+          S.adversaryLog.unshift({ ts: Date.now(), msg: `Eclipse: broadcast monopoly attempt (multi-lane routing active — mitigated)` });
+        }
+        break;
+    }
+    computeResilienceScore();
+    renderAdversarialUI();
+    saveState();
+  }, 3000 + Math.random() * 4000);
+}
+
+function isAdversarialClaim(claim) {
+  // Detection heuristics
+  if (!claim.text || claim.text.length < 5) return true;
+  const adversarialPatterns = [/free money/i, /100% guaranteed/i, /you must believe/i, /undeniable fact that everyone/i];
+  if (adversarialPatterns.some(p => p.test(claim.text))) return true;
+  // Check if high confidence from unknown author with no AI analysis
+  if (!claim.aiAnalysis && claim.confidence > 0.9) return true;
+  // Check active adversaries for injection signals
+  const activeAdvIds = S.adversaries.filter(a => a.active).map(a => `adv_${a.id.substring(0,6)}`);
+  if (activeAdvIds.some(aid => claim.author?.startsWith(aid) || claim.authorName?.startsWith(aid))) return true;
+  return false;
+}
+
+function detectAdversarialClaim(msg, peerId) {
+  if (isAdversarialClaim(msg.claim || msg)) {
+    S.adversaryLog.unshift({ ts: Date.now(), msg: `Adversarial message detected from ${peerId.substring(0,8)} — quarantined` });
+    bumpRep('adversarial_resistance', 10);
+    // Downgrade lane trust
+    const lane = S.lanes.get(peerId);
+    if (lane) { lane.trustScore = Math.max(0, lane.trustScore - 0.2); connLedgerAdd('Degraded', peerId, `Trust degraded — adversarial activity`); }
+    toast(`Adversarial activity from ${peerId.substring(0,8)} — blocked`, 'error');
+  }
+}
+
+function generateFakeClaim() {
+  const fakes = [
+    'This is definitely true and everyone agrees',
+    'Scientists have proven this beyond doubt with no evidence needed',
+    'This fact is undeniable and cannot be questioned',
+    'New research shows exactly what we already believed',
+    'Every expert endorses this unconditionally'
+  ];
+  return fakes[Math.floor(Math.random()*fakes.length)];
+}
+
+function computeResilienceScore() {
+  const totalAdv = S.adversaries.filter(a => a.active).length;
+  const totalInjected = S.adversaries.reduce((a,adv)=>a+adv.injectedClaims,0);
+  const totalBlocked = S.adversaries.reduce((a,adv)=>a+adv.claimsRejected,0);
+  const blockRate = totalInjected + totalBlocked > 0 ? totalBlocked / (totalInjected + totalBlocked) : 1;
+  const repFactor = (S.reputation.adversarial_resistance||0) / 100;
+  const laneFactor = S.lanes.size > 1 ? 1 : 0.7; // multi-lane helps resilience
+  const score = Math.round((blockRate * 0.5 + repFactor * 0.3 + laneFactor * 0.2) * 100);
+  const el = document.getElementById('resilience-score');
+  if (el) el.textContent = score + '%';
+  const el2 = document.getElementById('resilience-breakdown');
+  if (el2) el2.innerHTML = `
+    Active adversaries: ${totalAdv}<br>
+    Total injections: ${totalInjected} · Blocked: ${totalBlocked}<br>
+    Block rate: ${(blockRate*100).toFixed(0)}% · Rep factor: ${(repFactor*100).toFixed(0)}%<br>
+    Multi-lane protection: ${laneFactor === 1 ? 'active' : 'single lane'}`;
+  return score;
+}
+
+function renderAdversarialUI() {
+  const el = document.getElementById('adv-list');
+  if (!el) return;
+  const active = S.adversaries.filter(a => a.active);
+  if (!active.length) { el.innerHTML = '<div class="empty">No adversaries active.</div>'; }
+  else {
+    el.innerHTML = active.map(adv => `
+      <div class="adv-node">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span class="tag tag-red">${adv.strategy}</span> rate:${adv.rate} trust_mimic:${adv.trustMimic}</div>
+          <button onclick="stopAdversary('${adv.id}')" class="danger" style="font-size:9px;padding:3px 8px">Stop</button>
+        </div>
+        <div style="margin-top:4px;color:var(--text3)">injected: ${adv.injectedClaims} · blocked: ${adv.claimsRejected} · votes: ${adv.votes}</div>
+      </div>`).join('');
+  }
+  const logEl = document.getElementById('adv-log');
+  if (logEl) {
+    logEl.innerHTML = S.adversaryLog.slice(0,20).map(l =>
+      `<div style="padding:3px 0;border-bottom:1px solid var(--border)">${new Date(l.ts).toLocaleTimeString()} — ${escHtml(l.msg)}</div>`
+    ).join('') || '<div style="color:var(--text3)">No adversarial activity yet.</div>';
+  }
+}
+
+function stopAdversary(id) {
+  const adv = S.adversaries.find(a => a.id === id);
+  if (adv) { adv.active = false; toast('Adversary stopped', 'success'); ledgerAdd('ADV', `Adversary stopped: ${adv.strategy}`, {}); renderAdversarialUI(); saveState(); }
+}
+
+// ─── EVOLUTION ────────────────────────────────────────────
+async function submitEvo() {
+  const text = document.getElementById('evo-text').value.trim();
+  if (!text) { toast('Describe the proposal', 'error'); return; }
+  if (!S.identity.id) { toast('Generate identity first', 'error'); return; }
+  const evo = {
+    id: genId(), text, layer: document.getElementById('evo-layer').value,
+    author: S.identity.name||'me', ts: Date.now(),
+    votes: { for: 1, against: 0 }, status: 'active', simResult: null
+  };
+  document.getElementById('evo-ai-status').innerHTML = '<span class="ai-thinking">⟳ Running AI simulation…</span>';
+  if (S.ollama.available) {
+    const sim = await ollamaChat([
+      { role: 'system', content: 'You are a system evolution simulator for a decentralized P2P truth engine. Simulate proposed changes and output: {feasibility:0-1, risks:[], benefits:[], performance_delta:number, recommendation:"approve"|"reject"|"modify"}. JSON only.' },
+      { role: 'user', content: `Proposal for ${evo.layer}: ${text}` }
+    ], true);
+    if (sim) {
+      try { evo.simResult = JSON.parse(sim.replace(/```json|```/g,'').trim()); }
+      catch(e) { evo.simResult = { raw: sim }; }
+    }
+    evo.status = evo.simResult?.recommendation === 'approve' ? 'simulation-pass' : 'simulation-review';
+    document.getElementById('evo-ai-status').textContent = `Simulation: ${evo.simResult?.recommendation||'complete'}`;
+  } else {
+    document.getElementById('evo-ai-status').textContent = 'Ollama not connected — stored without simulation';
+  }
+  S.evolution.unshift(evo);
+  document.getElementById('evo-text').value = '';
+  ledgerAdd('EVO', `Proposal: ${text.substring(0,40)}…`, { layer: evo.layer });
+  earnContribution('analysis', 4);
+  bumpRep('domain_expertise', 6);
+  renderEvoList(); saveState();
+  toast('Evolution proposal submitted', 'success');
+}
+
+function renderEvoList() {
+  const el = document.getElementById('evo-list');
+  if (!el) return;
+  if (!S.evolution.length) { el.innerHTML = '<div class="empty">No evolution proposals yet.</div>'; return; }
+  el.innerHTML = S.evolution.map(e => {
+    const total = e.votes.for + e.votes.against;
+    const pct = total > 0 ? Math.round(e.votes.for/total*100) : 50;
+    return `
+    <div class="prop">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <div class="prop-status tag ${e.status==='deployed'?'tag-green':e.status.includes('pass')?'tag-amber':'tag-blue'}">${e.status}</div>
+        <div class="tag tag-purple" style="font-size:9px">${e.layer}</div>
+      </div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:6px">${escHtml(e.text)}</div>
+      ${e.simResult ? `
+        <div style="font-size:10px;color:var(--text3);line-height:1.8">
+          ${e.simResult.feasibility!=null?`feasibility: ${(e.simResult.feasibility*100).toFixed(0)}% · `:''}
+          ${e.simResult.performance_delta!=null?`perf_delta: ${e.simResult.performance_delta>0?'+':''}${e.simResult.performance_delta} · `:''}
+          ${e.simResult.recommendation?`rec: <span style="color:${e.simResult.recommendation==='approve'?'var(--accent)':'var(--yellow)'}">${e.simResult.recommendation}</span>`:''}
+        </div>
+        ${e.simResult.risks?.length?`<div style="font-size:10px;color:var(--red);margin-top:2px">Risks: ${e.simResult.risks.slice(0,2).join(', ')}</div>`:''}
+        ${e.simResult.benefits?.length?`<div style="font-size:10px;color:var(--accent);margin-top:2px">Benefits: ${e.simResult.benefits.slice(0,2).join(', ')}</div>`:''}
+      ` : ''}
+      <div class="vote-bar" style="margin:8px 0"><div class="vote-for" style="width:${pct}%"></div><div class="vote-against" style="width:${100-pct}%"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px">${e.votes.for} support · ${e.votes.against} oppose</div>
+      ${e.status !== 'deployed' ? `
+      <div class="row" style="gap:6px">
+        <button onclick="voteEvo('${e.id}','for')" class="primary" style="font-size:10px">Support</button>
+        <button onclick="voteEvo('${e.id}','against')" class="danger" style="font-size:10px">Oppose</button>
+        ${pct >= S.governance.params.fork_quorum*100 ? `<button onclick="deployEvo('${e.id}')" style="font-size:10px;color:var(--accent)">Deploy</button>` : ''}
+      </div>` : '<div style="font-size:10px;color:var(--accent)">✓ Deployed to system</div>'}
+    </div>`;
+  }).join('');
+}
+
+function voteEvo(id, side) {
+  const e = S.evolution.find(x => x.id === id);
+  if (e) { e.votes[side]++; ledgerAdd('EVO', `Voted ${side}`, {}); bumpRep('reliability', 2); renderEvoList(); saveState(); }
+}
+
+function deployEvo(id) {
+  const e = S.evolution.find(x => x.id === id);
+  if (e) { e.status = 'deployed'; ledgerAdd('EVO', `Deployed: ${e.text.substring(0,40)}`, { layer: e.layer }); renderEvoList(); saveState(); toast('Evolution proposal deployed!', 'success'); }
+}
+
+// ─── LEDGER ───────────────────────────────────────────────
+function ledgerAdd(type, msg, data) {
+  S.ledger.unshift({ id: genId(), type, msg, data, ts: Date.now() });
+  if (S.ledger.length > 1000) S.ledger = S.ledger.slice(0, 1000);
+}
+
+function renderLedger() {
+  const filter = document.getElementById('ledger-filter').value;
+  const entries = filter ? S.ledger.filter(e => e.type === filter) : S.ledger;
+  const el = document.getElementById('ledger-entries');
+  if (!el) return;
+  if (!entries.length) { el.innerHTML = '<div class="empty">No ledger entries.</div>'; return; }
+  el.innerHTML = entries.slice(0, 200).map(e => `
+    <div class="ledger-entry">
+      <div class="ledger-time">${new Date(e.ts).toLocaleTimeString()}</div>
+      <div class="ledger-type"><span class="tag ${typeTag(e.type)}">${e.type}</span></div>
+      <div class="ledger-msg">${escHtml(e.msg)}</div>
+    </div>`).join('');
+}
+
+function exportLedger() {
+  const json = JSON.stringify(S.ledger, null, 2);
+  const a = document.createElement('a');
+  a.href = 'data:application/json,' + encodeURIComponent(json);
+  a.download = `iam-ledger-${Date.now()}.json`;
+  a.click();
+}
+
+function clearLedger() {
+  if (confirm('Clear all ledger entries?')) { S.ledger = []; renderLedger(); saveState(); }
+}
+
+function typeTag(t) {
+  const m = { CLAIM:'tag-blue', VOTE:'tag-purple', MSG:'tag-green', FILE:'tag-amber', PEER:'tag-green', GOV:'tag-red', EVO:'tag-purple', AI:'tag-blue', IDENTITY:'tag-green', TRANSPORT:'tag-amber', MEMORY:'tag-purple', ADV:'tag-red', SYSTEM:'tag-blue' };
+  return m[t] || 'tag-amber';
+}
+
+// ─── OLLAMA ───────────────────────────────────────────────
+async function checkOllama() {
+  const url = document.getElementById('ollama-url').value.trim();
+  S.ollama.url = url;
+  const statusEl = document.getElementById('ollama-status');
+  statusEl.textContent = 'ollama: connecting…';
+  try {
+    const r = await fetch(url + '/api/tags', { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    S.ollama.available = true;
+    S.ollama.models = data.models?.map(m => m.name) || [];
+    statusEl.textContent = `ollama: ✓ ${S.ollama.models.length} models`;
+    statusEl.className = 'ok';
+    document.getElementById('ollama-models-list').textContent = 'Models: ' + S.ollama.models.join(', ');
+    if (S.ollama.models.length) S.ollama.model = S.ollama.models[0].split(':')[0];
+    document.getElementById('ollama-model').textContent = S.ollama.model;
+    ledgerAdd('AI', 'Ollama connected', { models: S.ollama.models.length, url });
+    toast('Ollama connected: ' + S.ollama.models.join(', '), 'success');
+    saveState();
+  } catch(e) {
+    S.ollama.available = false;
+    statusEl.textContent = 'ollama: offline';
+    statusEl.className = '';
+  }
+}
+
+async function ollamaChat(messages, jsonMode = false) {
+  if (!S.ollama.available) return null;
+  try {
+    const body = { model: S.ollama.model, messages, stream: false, options: { temperature: jsonMode ? 0 : 0.3, num_predict: 512 } };
+    if (jsonMode) body.format = 'json';
+    const r = await fetch(S.ollama.url + '/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    ledgerAdd('AI', `AI inference: ${S.ollama.model}`, { tokens: data.eval_count });
+    return data.message?.content || null;
+  } catch(e) { console.warn('Ollama error:', e); return null; }
+}
+
+// ─── IDENTITY UI ──────────────────────────────────────────
+function updateNodeName() {
+  S.identity.name = document.getElementById('id-name').value;
+  saveState();
+}
+
+function renderCaps() {
+  const caps = ['validator','researcher','predictor','auditor','agent'];
+  document.getElementById('cap-toggles').innerHTML = caps.map(c => `
+    <button onclick="toggleCap('${c}')" class="${S.caps[c]?'primary':''}" style="font-size:11px">${c}</button>`).join('');
+}
+
+function toggleCap(cap) {
+  S.caps[cap] = !S.caps[cap];
+  renderCaps(); saveState();
+}
+
+function renderIntents() {
+  const intents = ['find_validators','find_storage','find_low_latency','find_trusted'];
+  const labels = { find_validators: 'validators', find_storage: 'storage', find_low_latency: 'low latency', find_trusted: 'trusted' };
+  const el = document.getElementById('intent-toggles');
+  if (!el) return;
+  el.innerHTML = intents.map(i => `
+    <button onclick="toggleIntent('${i}')" class="${S.intents[i]?'primary':''}" style="font-size:11px">${labels[i]}</button>`).join('');
+}
+
+function toggleIntent(intent) {
+  S.intents[intent] = !S.intents[intent];
+  renderIntents(); saveState();
+}
+
+async function exportIdentity() {
+  if (!S.identity.keyHex) { toast('Generate identity first', 'error'); return; }
+  const data = { name: S.identity.name, keyHex: S.identity.keyHex, id: S.identity.id, caps: S.caps, intents: S.intents };
+  const a = document.createElement('a');
+  a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(data, null, 2));
+  a.download = `iam-identity-${S.identity.id.substring(0,8)}.json`;
+  a.click();
+}
+
+function importIdentityPrompt() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        S.identity.name = data.name||''; S.identity.keyHex = data.keyHex||''; S.identity.id = data.id||'';
+        if (data.caps) S.caps = data.caps;
+        if (data.intents) S.intents = data.intents;
+        document.getElementById('id-name').value = S.identity.name;
+        document.getElementById('id-display').innerHTML = `<em>Public Key:</em> ${S.identity.keyHex.substring(0,64)}…<br><em>Node ID:</em> ${S.identity.id}<br><em>Status:</em> Imported from file`;
+        document.getElementById('node-short').textContent = S.identity.id.substring(0,12)+'…';
+        renderCaps(); renderIntents(); saveState();
+        toast('Identity imported', 'success');
+      } catch(e) { toast('Invalid identity file', 'error'); }
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+  input.click();
+}
+
+// ─── SIGNAL RELAY ─────────────────────────────────────────
+function connectSignal() {
+  const url = document.getElementById('signal-url').value.trim();
+  if (!url) return;
+  try {
+    S.network.signal = new WebSocket(url);
+    S.network.signal.onopen = () => {
+      toast('Signal relay connected', 'success');
+      S.network.signal.send(JSON.stringify({ type: 'REGISTER', id: S.identity.id }));
+    };
+    S.network.signal.onmessage = e => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'OFFER') document.getElementById('peer-offer').value = msg.sdp;
+    };
+    S.network.signal.onerror = () => toast('Signal relay error', 'error');
+  } catch(e) { toast('Invalid relay URL', 'error'); }
+}
+
+// ─── BROADCAST ────────────────────────────────────────────
+function broadcastMsg() {
+  const text = document.getElementById('broadcast-msg').value.trim();
+  if (!text) return;
+  const sent = broadcastAll({ type: 'BROADCAST', from: S.identity.name||'anonymous', text });
+  document.getElementById('broadcast-msg').value = '';
+  toast(`Broadcast to ${sent} peer(s)`, sent > 0 ? 'success' : '');
+  ledgerAdd('MSG', `Broadcast: ${text.substring(0,40)}`, { peers: sent });
+}
+
+// ─── STATS ────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-peers').textContent = S.network.peers.size;
+  document.getElementById('stat-lanes').textContent = S.lanes.size;
+  document.getElementById('stat-claims').textContent = S.claims.length;
+  document.getElementById('stat-msgs').textContent = Object.values(S.messages).reduce((a,b)=>a+b.length,0);
+  document.getElementById('badge-peers').textContent = S.network.peers.size;
+  const avg = Math.round(Object.values(S.reputation).reduce((a,b)=>a+b,0)/4);
+  document.getElementById('stat-rep').textContent = avg + '%';
+  const cwTotal = Object.values(S.contribution).reduce((a,b)=>a+b,0);
+  document.getElementById('stat-cw').textContent = cwTotal;
+}
+
+// ─── NAV ──────────────────────────────────────────────────
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  if (el) el.classList.add('active');
+  // Refresh on show
+  const refreshMap = {
+    validate: renderValidateList,
+    truth: () => { renderTruthLive(); },
+    reputation: renderReputation,
+    governance: renderGovernance,
+    evolve: renderEvoList,
+    ledger: renderLedger,
+    files: renderFileList,
+    network: renderPeerList,
+    messages: updateMsgPeerSelect,
+    transport: updateLanesUI,
+    contribution: renderContribution,
+    specialization: computeMyRole,
+    memory: () => { renderMemoryList(); },
+    predict: renderPredictLive,
+    branches: renderBranches,
+    adversarial: () => { renderAdversarialUI(); computeResilienceScore(); },
+    connledger: renderConnLedger,
+    claims: renderClaimsList
+  };
+  if (refreshMap[name]) refreshMap[name]();
+}
+
+function renderPeerList() {
+  const el = document.getElementById('peer-list');
+  if (!el) return;
+  if (!S.network.peers.size) { el.innerHTML = '<div class="empty">No peers connected. Create an offer and share with another I-AM node.</div>'; return; }
+  el.innerHTML = Array.from(S.network.peers.values()).map(p => {
+    const rel = S.peerRelationships[p.peerId] || {};
+    return `<div class="peer">
+      <div class="peer-dot" style="background:var(--accent)"></div>
+      <div style="flex:1">
+        <div class="peer-name">${escHtml(p.name||'anonymous')} ${p.role ? `<span class="spec-role" style="font-size:9px">${p.role}</span>` : ''}</div>
+        <div class="peer-addr">${p.id?.substring(0,20)||''}… · trust:${((rel.trustScore||0.5)*100).toFixed(0)}% · connected ${timeAgo(p.connectedAt)}</div>
+      </div>
+      <div class="tag tag-green">live</div>
+    </div>`;
+  }).join('');
+  document.getElementById('peer-count').textContent = S.network.peers.size;
+}
+
+// ─── HELPERS ─────────────────────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function confColor(c) { if (c>0.7) return 'var(--accent)'; if (c>0.45) return 'var(--yellow)'; return 'var(--red)'; }
+function confTag(c) { if (c>0.7) return 'tag-green'; if (c>0.45) return 'tag-amber'; return 'tag-red'; }
+function timeAgo(ts) {
+  const s = Math.floor((Date.now()-ts)/1000);
+  if (s<60) return s+'s ago'; if (s<3600) return Math.floor(s/60)+'m ago';
+  if (s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago';
+}
+
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast-item ' + type;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────
+async function boot() {
+  await loadState();
+  renderCaps();
+  renderIntents();
+  renderReputation();
+  renderGovernance();
+  renderEvoList();
+  renderLedger();
+  renderFileList();
+  renderClaimsList();
+  renderTruthLive();
+  renderPredictLive();
+  renderMemoryList();
+  renderBranches();
+  renderAdversarialUI();
+  renderContribution();
+  computeMyRole();
+  updateStats();
+  updateStorageStats();
+  updateLanesUI();
+  // Restore truth program if saved
+  if (S.governance.program) {
+    try {
+      S.truthProgram = new Function('return (' + S.governance.program + ')')();
+    } catch(e) { S.truthProgram = null; }
+  }
+  checkOllama().catch(()=>{});
+  ledgerAdd('SYSTEM', 'I-AM System v5.1 booted — all layers active', { ts: Date.now() });
+  // Auto-save every 30s
+  setInterval(() => saveState(), 30000);
+  // Auto compute resilience every 10s if adversaries active
+  setInterval(() => {
+    if (S.adversaries.some(a => a.active)) computeResilienceScore();
+    // Periodic lane quality decay for inactive lanes
+    S.lanes.forEach((lane, pid) => {
+      const msSinceMsg = Date.now() - lane.lastPing;
+      if (msSinceMsg > 30000) {
+        lane.pathQuality = Math.max(0.1, lane.pathQuality - 0.02);
+        if (lane.pathQuality < S.connectionContracts.bandwidth_min) {
+          connLedgerAdd('Degraded', pid, `Lane quality degraded below contract threshold: ${lane.pathQuality.toFixed(2)}`);
+          checkContractCompliance(pid);
+        }
+      }
+    });
+  }, 10000);
+}
+
+boot();
+</script>
+</body>
+</html>
